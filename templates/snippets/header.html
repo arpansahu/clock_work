@@ -1,0 +1,25 @@
+{% load static %}
+  <!--     Fonts and icons     -->
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+  <!-- Nucleo Icons -->
+  <link href="{% static 'assets/css/nucleo-icons.css' %}" rel="stylesheet" />
+  <link href="{% static 'assets/css/nucleo-svg.css' %}" rel="stylesheet" />
+  <!-- Font Awesome Icons -->
+  <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+  <link href="{% static 'assets/css/nucleo-svg.css' %}" rel="stylesheet" />
+  <!-- CSS Files -->
+  <link id="pagestyle" href="{% static 'assets/css/soft-ui-dashboard.css' %}" rel="stylesheet" />
+<style >
+    html {
+  font-size: 14px;
+}
+</style>
+
+<div class="d-flex flex-column flex-md-row align-items-center p-4 px-md-4 mb-4 bg-white border-bottom shadow-sm back" >
+    <a href="{% url 'home' %}"><img style="border-radius: 10px" src="{% static 'reminder.png' %}" alt="CALCULATOR logo" width="75  " height="75"></a>
+  <h5 class="my-0 mr-md-auto font-weight-normal" style="margin: 10px">CLOCK WORK REMINDER & NOTES</h5>
+  <nav class="my-2 my-md-0 mr-md-3">
+  </nav>
+</div>
+
+{% include "snippets/scripts.html" %}
