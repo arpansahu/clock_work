@@ -29,6 +29,11 @@ from send_email_app.views import (
     ws_view
 )
 
+from notifications_app.views import (
+    test,
+
+)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     re_path(r'^celery-progress/', include('celery_progress.urls')),
@@ -39,4 +44,6 @@ urlpatterns = [
     path('send_mail/', SendMail.as_view(), name="send_mail"),
     path('web-socket-send-mail/', SendMail.as_view(), name="web_socket_send_mail"),
     path('celery-progress/', include('celery_progress.urls')),
+    path('test/notification/', test, name='test_notification'),
+    re_path('tasks/', include('tasks.urls')),
 ]

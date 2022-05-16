@@ -7,7 +7,7 @@
   <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
 
   <title>
-    CLOCK WORK REMINDER & NOTES {% block title %}{% endblock %}
+      {% block title %}{% endblock %}
   </title>
 
   <!--     Fonts and icons     -->
@@ -22,16 +22,25 @@
   <link id="pagestyle" href="{% static 'assets/css/soft-ui-dashboard.css' %}" rel="stylesheet" />
   <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+  <!-- Jquery/AJAX -->
+  <script src="{% static 'js/jquery.js' %}"></script>
   <!-- Specific CSS goes HERE -->
-  {% block stylesheets %}{% endblock stylesheets %}
-  {% include 'snippets/header.html' %}
+  {% block stylesheets %}
+      html {
+        font-size: 14px;
+      }
+  {% endblock stylesheets %}
 </head>
 <body class="g-sidenav-show  bg-gray-100">
 
-  <main class="main-content position-relative max-height-vh-100 h-100 mt-1 border-radius-lg "style="margin: 20px">
+  <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg ">
+      {% include 'snippets/header.html' %}
 
+      {% block content %}{% endblock content %}
 
-    {% block content %}{% endblock content %}
+      <div class="container-fluid py-4">
+          {% include 'snippets/footer.html' %}
+      </div>
 
   </main>
 
@@ -40,13 +49,5 @@
   <!-- Specific JS goes HERE -->
   <script src="{% static 'js/jquery.js' %}"></script>
   {% block javascripts %}{% endblock javascripts %}
-
-
-  <!-- Github buttons -->
-  <script async defer src="https://buttons.github.io/buttons.js"></script>
-
-  <!-- Control Center for Soft Dashboard: parallax effects, scripts for the example pages etc -->
-  <script src="{% static 'assets/js/soft-ui-dashboard.min.js' %}"></script>
-
 </body>
 </html>

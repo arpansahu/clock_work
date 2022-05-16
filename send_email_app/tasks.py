@@ -1,6 +1,9 @@
+import json
 import time
 from random import random
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.contrib.auth import get_user_model
 from celery_progress.backend import ProgressRecorder
 from celery_progress.websockets.backend import WebSocketProgressRecorder
@@ -21,7 +24,7 @@ def send_mail_func(self):
             message=message,
             from_email=settings.EMAIL_HOST_USER,
             recipient_list=[to_email],
-            fail_silently=False,
+            fail_silently=True,
         )
     return "Done"
 
@@ -36,11 +39,35 @@ def send_mail_task(self, emails, headline, content):
             message=message,
             from_email=settings.EMAIL_HOST_USER,
             recipient_list=[emails[0]],
-            fail_silently=False,
+            fail_silently=True,
         )
         progress_recorder.set_progress(email_no + 1, len(emails), f'Sending Notes to {emails[email_no]}')
 
     return "Done"
+
+@shared_task(bind=True)
+def send_mail_task_with_schedule(self, emails, headline, content):
+    for email_no in range(len(emails)):
+        mail_subject = headline
+        message = content
+        send_mail(
+            subject=mail_subject,
+            message=message,
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[emails[0]],
+            fail_silently=True,
+        )
+
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        "notification_broadcast",
+        {
+            'type': 'send_notification',
+            'message': json.dumps(f"Mail send to {emails} with headline {headline}")
+        }
+    )
+    return "Done"
+
 
 
 @shared_task(bind=True)
@@ -62,7 +89,7 @@ def web_socket_send_mail_task(self, emails, headline, content):
             message=message,
             from_email=settings.EMAIL_HOST_USER,
             recipient_list=[emails[0]],
-            fail_silently=False,
+            fail_silently=True,
         )
         progress_recorder.set_progress(email_no + 1, len(emails), f'Sending Notes to {emails[email_no]}')
 
