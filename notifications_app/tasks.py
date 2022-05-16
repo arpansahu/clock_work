@@ -7,7 +7,6 @@ from celery import Celery, states
 from celery.exceptions import Ignore
 import asyncio
 
-
 @shared_task(bind=True)
 def broadcast_notification(self, data):
     print(data)

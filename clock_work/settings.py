@@ -166,6 +166,9 @@ EMAIL_HOST_PASSWORD = config('EMAIL_PASS')
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
+MAIL_JET_API_KEY = config('MAIL_JET_API_KEY')
+MAIL_JET_API_SECRET = config('MAIL_JET_API_SECRET')
+
 try:
     import channels
 except ImportError:
