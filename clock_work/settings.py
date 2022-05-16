@@ -85,17 +85,22 @@ WSGI_APPLICATION = 'clock_work.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT'),
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': config('DB_NAME'),
+#         'USER': config('DB_USER'),
+#         'PASSWORD': config('DB_PASSWORD'),
+#         'HOST': config('DB_HOST'),
+#         'PORT': config('DB_PORT'),
+#     }
+# }
 
+# Parse database configuration from $DATABASE_URL
+import dj_database_url
+# DATABASES['default'] =  dj_database_url.config()
+#updated
+DATABASES = {'default': dj_database_url.config(default=config('DATABASE_URL'))}
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
@@ -141,8 +146,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # CELERY STUFF
-CELERY_BROKER_URL = config("REDIS_URL")
-# CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_BROKER_URL = config("REDISCLOUD_URL")
+# CELERY_RESULT_BACKEND = config("REDISCLOUD_URL")
 # CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
@@ -176,7 +181,7 @@ else:
             # This example is assuming you use redis, in which case `channels_redis` is another dependency.
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                "hosts": [ config("REDIS_URL") ],
+                "hosts": [ config("REDISCLOUD_URL") ],
             },
         },
     }

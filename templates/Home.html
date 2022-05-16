@@ -44,7 +44,7 @@
                 </div>
                 <div class="form-group">
                   <label for="example-email-input" class="form-control-label">Receivers Emails (use space to fill multiple emails)</label>
-                  <input style="background-color: #e9ecef" class="form-control" type="email" value="admin@arpansahu.me" id="emails-input" name="emails-input">
+                  <input style="background-color: #e9ecef" class="form-control" type="email" value="Enter emails" id="emails-input" name="emails-input">
                 </div>
                 <div class="form-group">
                   <label for="example-text-input" class="form-control-label" >Content</label>
@@ -89,7 +89,6 @@
     notificationSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
         //document.querySelector('#chat-log').value += (data.message + '\n');
-        alert(data);
         console.log(data);
         document.getElementById("notifications-dropdown").innerHTML =
             {#"<li class='dropdown-item'>" + data + "</li><hr class='dropdown-divider'>" + document.getElementById("notifications-dropdown").innerHTML;#}
