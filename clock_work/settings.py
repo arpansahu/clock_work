@@ -146,6 +146,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # CELERY STUFF
+# CELERY_BROKER_URL = 'redis://localhost:6379'
 CELERY_BROKER_URL = config("REDISCLOUD_URL")
 # CELERY_RESULT_BACKEND = config("REDISCLOUD_URL")
 # CELERY_RESULT_BACKEND = 'django-db'
@@ -184,7 +185,16 @@ else:
             # This example is assuming you use redis, in which case `channels_redis` is another dependency.
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                "hosts": [ config("REDISCLOUD_URL") ],
+                "hosts": [config("REDISCLOUD_URL") ],
             },
         },
     }
+
+    # CHANNEL_LAYERS = {
+    #     'default': {
+    #         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+    #         'CONFIG': {
+    #             "hosts": [('127.0.0.1', 6379)],
+    #         },
+    #     },
+    # }
