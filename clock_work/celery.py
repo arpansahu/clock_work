@@ -7,7 +7,7 @@ from decouple import config
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'clock_work.settings')
 
-redis_url = f'redis://{config("REDIS_PASSWORD")}@{config("REDIS_HOST")}:{config("REDIS_PORT")}/{config("REDIS_DB")}'
+redis_url = config("REDIS_URL")
 
 app = Celery('clock_work', broker=redis_url, backend=redis_url, include=['tasks.tasks'])
 
