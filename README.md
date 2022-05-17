@@ -217,10 +217,14 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Kolkata'
 ```
+
+
 CELERY_RESULT_BACKEND have been commented, because we have used ```task.apply_async()``` instead of ```task.dealy()```
 with websockets for sending notification, django-db as a backend is synchronous
 and thus gives error, Hence we have to use redis or other resources which primarily 
 supports asynchronous work flow.
+
+
 ---
 
 Creating Asyn App - create a file named celery.py in project directory.
