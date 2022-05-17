@@ -23,13 +23,32 @@ This project provides following features
 1. Used Heroku Postgres 
 2. Used Daphene
 
-## What is Redis, Celery and Web Scokets and Ajax?
+## What is Redis, Celery, Celery Beat, Web Sockets, Channels, Signals, Ajax?
+In the below image I will try to explain everything.
 
-1. In this Complete 
+![alt text](https://github.com/arpansahu/clock_work/blob/master/explanation.png?raw=true)
 
+1. When a user wants to take notes and want it to email-ed. Then from Django app we send 
+    a request to Django View to create and Send a task to Redis/RabbitMQ broker. Then 
+    broker will be passing this task to celery. Moreover, since while creating a task we 
+    used celery results to save the progress in CELER_RESULT_BACKEND (django-db or redis or rabbitmq).
+    So while the task is being executed user can see progress bar via two methods:
 
-![alt text](https://github.com/arpansahu/clock_work/blob/master/Readme Images/explanation.png?raw=true)
+    - Using Ajax Call: While the process is not completed you can continuously hit the 
+      endpoint to check status fo the task. which eventually increase your server load.
+    - Using Web Sockets and channels: As soon as you load the web page you make a web socket 
+      protocol connection to the server via handshaking and once the connection is established
+      your server can directly send messages to frontend without request from the user end.
+      This channel layer is also using Redis for Quick Response. So as soon as there are any changes
+      to status of task it is notified to channel and if user is still connected to the channels, will
+      be able to see the results in progress bar.
 
+2. When a user wants to Schedule an Email as Reminder then, Via Django Application View, a cron task is created and that is 
+   assigned to Celery Beat and as soon as the scheduled time arrived it pass task to broker and then it is finally assinged 
+   to celery which finishes the task and at the end of the task, a message is passed through channels to frontend to notify about the completion of task.
+
+3. Admin can broadcast a Notification to all users using django channels and cron tab, admin can schedule the notification 
+   at the 
 ## Tech Stack
 
 [![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
