@@ -160,9 +160,7 @@ RabbitMQ is an open-source message-broker software that originally implemented t
 
 ## Demo
 
-Available at: http://clock-works.herokuapp.com/
-
-Note: Remmber to access this project at http because websockets are not configured to run over https in this project yet. 
+Available at: https://clock-works.herokuapp.com/
 
 admin login details:--
 username: arpansahu
@@ -356,11 +354,10 @@ celery: celery -A clock_work.celery worker -l info
 celerybeat: celery -A clock_work beat -l INFO
 celeryworker2: celery -A clock_work.celery worker & celery -A clock_work beat -l INFO & wait -n
 ```
----
+
 In the above Procfile there are three workers required for web, celery and celery beat, but since heroku free
 plan only allows upto 2 free dynos we have merged celery and celerybeat into celeryworker2
 and from the admin panel of heroku app we can enable just the web and celeryworker2.
----
 
 Comment down Database setting and install 
 
