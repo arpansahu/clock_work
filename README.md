@@ -271,7 +271,7 @@ set ASGI settings in settings.py
 ASGI_APPLICATION = 'clock_work.routing.application'
 ```
 
-Uncomment Channel Layers Setting for Local Machine on settings.py, line 137 to 144 
+Uncomment Channel Layers Setting for Local Machine on settings.py
 ```bash
    CHANNEL_LAYERS = {
      'default': {
@@ -282,7 +282,7 @@ Uncomment Channel Layers Setting for Local Machine on settings.py, line 137 to 1
      },
    }
 ```
-Comment Channel Layers Setting for Heroku on settings.py, line 147 to 154 
+Comment Channel Layers Setting for Heroku on settings.py
 ```bash
    CHANNEL_LAYERS = {
     "default": {
