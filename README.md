@@ -192,10 +192,6 @@ Creating Super User
 ```bash
   python manage.py createsuperuser
 ```
-Note: if you try to access chat room with just one user it will be throwing error.So after creating a superuser
-register from a new user using website and then enter into it. It must have at least two users to chat.
-
--------------------------
 
 Installing Redis On Local (For ubuntu) for other Os Please refer to their website https://redis.io/
 ```bash
