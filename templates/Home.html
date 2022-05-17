@@ -75,11 +75,11 @@
 <!-- Specific JS goes HERE -->
 {% block javascripts %}
     <script>
-
+    let ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
     const roomName = JSON.parse(document.getElementById('room-name').textContent);
 
     const notificationSocket = new WebSocket(
-        'ws://'
+        ws_scheme +'://'
         + window.location.host
         + '/ws/notification/'
         + roomName
@@ -288,7 +288,7 @@
                             '<div id="progress-bar-message">Waiting for progress to start...</div>'
                           )
                           $(function () {
-                              var progressUrl =  '/ws/progress/' +  data.task_id + '/';
+                              var progressUrl =  '/'+ws_scheme+'/progress/' +  data.task_id + '/';
                               CeleryWebSocketProgressBar.initProgressBar(progressUrl);
                           });
                  },
