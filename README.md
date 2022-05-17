@@ -227,7 +227,7 @@ supports asynchronous work flow.
 
 ---
 
-Creating Asyn App - create a file named celery.py in project directory.
+Creating Async App - create a file named celery.py in project directory.
 ``` 
 import os
 
