@@ -9,7 +9,7 @@ from braces import views
 # Create your views here.
 from django.views import View
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
-from .tasks import send_mail_func, send_mail_task, ws_task
+from .tasks import send_mail_func, send_mail_task, ws_task, web_socket_send_mail_task
 from celery_progress.backend import ProgressRecorder
 
 
@@ -69,7 +69,7 @@ class WebSocketSendMail(views.JSONResponseMixin, views.AjaxResponseMixin, View):
         try:
             # raise TypeError("Only integers are allowed")
             # send_mail_task.delay(emails, headline, content)
-            task = send_mail_task.apply_async(args=[emails, headline, content])
+            task = web_socket_send_mail_task.apply_async(args=[emails, headline, content])
             return self.render_json_response({"status": "Success", "message": "Notes Send", "task_id": task.task_id},
                                              status=200)
         except Exception as e:
