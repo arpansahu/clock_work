@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    env_file: ./.env
+    command: bash -c "python manage.py makemigrations && python manage.py migrate && daphne clock_work.asgi:application -b 0.0.0.0 --port 8013 & celery -A clock_work.celery worker -l info & celery -A clock_work beat -l INFO"
+    image: clock_work
+    container_name: clock_work
+    volumes:
+      - .:/clock_work
+    ports:
+      - "8013:8013"
