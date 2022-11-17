@@ -8,6 +8,6 @@ COPY . .
 
 RUN pip3 install -r requirements.txt
 
-EXPOSE 8013
+EXPOSE 8012
 
-CMD daphne clock_work.asgi:application -b 0.0.0.0 --port 8013 & celery -A borcelle_crm.celery worker -l info & celery -A borcelle_crm beat -l INFO
+CMD daphne clock_work.asgi:application -b 0.0.0.0 --port 8012 & celery -A clock_work.celery worker -l info & celery -A clock_work beat -l INFO
