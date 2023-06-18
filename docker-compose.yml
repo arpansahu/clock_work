@@ -11,3 +11,4 @@ services:
       - .:/clock_work
     ports:
       - "8012:8012"
+    restart: unless-stopped

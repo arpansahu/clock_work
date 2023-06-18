@@ -137,13 +137,42 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
+if not DEBUG:
+    AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400'
+    }
+    AWS_LOCATION = 'static'
+    AWS_QUERYSTRING_AUTH = False
+    AWS_HEADERS = {
+        'Access-Control-Allow-Origin': '*',
+    }
+    # s3 static settings
+    AWS_STATIC_LOCATION = 'portfolio/clock_work/static'
+    STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_STATIC_LOCATION}/'
+    STATICFILES_STORAGE = 'clock_work.storage_backends.StaticStorage'
+    # s3 public media settings
+    AWS_PUBLIC_MEDIA_LOCATION = 'portfolio/clock_work/media'
+    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_PUBLIC_MEDIA_LOCATION}/'
+    DEFAULT_FILE_STORAGE = 'clock_work.storage_backends.PublicMediaStorage'
+    # s3 private media settings
+    PRIVATE_MEDIA_LOCATION = 'portfolio/clock_work/private'
+    PRIVATE_FILE_STORAGE = 'clock_work.storage_backends.PrivateMediaStorage'
+else:
+    # Static files (CSS, JavaScript, Images)
+    # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = 'static/'
+    STATIC_URL = '/static/'
+
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"), ]
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # CELERY STUFF
 # CELERY_BROKER_URL = 'redis://localhost:6379'
@@ -158,14 +187,6 @@ CELERY_TIMEZONE = 'Asia/Kolkata'
 # CELERY BEAT
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # During development only
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_HOST_USER = config('EMAIL_USER')
-# EMAIL_HOST_PASSWORD = config('EMAIL_PASS')
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
 
 MAIL_JET_API_KEY = config('MAIL_JET_API_KEY')
 MAIL_JET_API_SECRET = config('MAIL_JET_API_SECRET')
@@ -190,25 +211,13 @@ else:
         },
     }
 
-    # CHANNEL_LAYERS = {
-    #     'default': {
-    #         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-    #         'CONFIG': {
-    #             "hosts": [('127.0.0.1', 6379)],
-    #         },
-    #     },
-    # }
 
 
 #Caching
 
 CACHES = {
     "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
         "LOCATION": config('REDISCLOUD_URL'),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient"
-        },
-        "KEY_PREFIX": "example"
     }
 }
