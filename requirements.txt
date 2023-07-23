@@ -81,3 +81,4 @@ wcwidth==0.2.6
 whitenoise==6.0.0
 wrapt==1.14.1
 zipp==3.8.0
+daphne==3.0.2
