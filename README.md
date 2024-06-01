@@ -20,13 +20,13 @@ This project provides following features
 
 -Deployed on Heroku
 
-1. Used Heroku Postgres 
+1. Used Postgres 
 2. Used Daphene
-3. Used REDIS-CLOUD Sever, provided by heroku add-ons
+3. Used REDIS
 
--Deployed on AWS / Now in My Own Home Ubuntu Server LTS 22.0 
+-Deployed on AWS / Now in My Own Home Ubuntu Server LTS 22.0 / Hostinger VPS Server
 
-1. Used AWS EC2 Ubuntu 22.0 LTS
+1. Used Ubuntu 22.0 LTS
 2. Used Nginx as a Web Proxy Server
 3. Used Let's Encrypt Wildcard certificate 
 4. Used Acme-dns server for automating renewal of wildcard certificates
@@ -176,14 +176,12 @@ RabbitMQ is an open-source message-broker software that originally implemented t
 [![Jenkins](https://img.shields.io/badge/Jenkins-D24939?style=for-the-badge&logo=Jenkins&logoColor=white)](https://www.jenkins.io/)
 [![AWS](https://img.shields.io/badge/Amazon_AWS-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)](https://aws.amazon.com/)
 [![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)]()
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)]()
 
 ## Demo
 
-Available at: https://clock-works.herokuapp.com/
+Available at: https://clock-work.arpansahu.me/
 
-admin login details:--
-username: arpansahu
-password: showmecode
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
@@ -411,22 +409,40 @@ to
 CELERY_BROKER_URL=config("REDISCLOUD_URL")
 ```
 
-## Deployment on AWS EC2/ Home Server Ubuntu 22.0 LTS
+## Deployment on AWS EC2/ Home Server Ubuntu 22.0 LTS/ Hostinger VPS Server
 Previously This project was hosted on Heroku, but so I started hosting this and all other projects in a 
 Single EC2 Machine, which costed me a lot, so now I have shifted all the projects into my own Home Server with 
 Ubuntu 22.0 LTS Server, except for portfolio project at https://www.arpansahu.me along with Nginx 
 
 
 Now there is EC2 server running with a nginx server and arpansahu.me portfolio
-Nginx forward https://clock-work.arpansahu.me/ to Home Server 
+Nginx forward https://arpansahu.me/ to Home Server 
 
 Multiple Projects are running inside dockers so all projects are dockerized.
 You can refer to all projects on https://www.arpansahu.me/projects
 
 Every project have different port on which its running predefined inside Dockerfile and docker-compose.yml
 
-![EC2 and Home Server along with Nginx Arrangement](https://github.com/arpansahu/clock_work/blob/master/ec2_and_home_server.png?raw=true)
+![EC2 and Home Server along with Nginx, Docker and Jenkins Arrangement](/ec2_and_home_server.png)
 
+Note: Update as of Aug 2023, I have decided to make some changes to my lifestyle, and from now i will be constantly on the go
+      from my past experience with running free EC2 server for arpansahu.me and nginx in it and then using another home server
+      with all the other projects hosted, my experience was
+      
+      1. Downtime due to Broadband Service Provider Issues
+      2. Downtime due to Weather Sometimes
+      3. Downtime due to Machine Breakdown
+      4. Downtime due to Power Cuts (even though i had a inverted with battery setup for my room)
+      5. Remotely it would be harder to fix these problems 
+
+  and due to all these reasons i decided to shift all the projects to single EC2 Server, at first i was using t2.medium which costs more than 40$ a month 
+  then i switched to t2.small and it only costs you 15$ and if we take pre paid plans prices can be slashed much further. 
+
+  Then again i shifted to Hostinger VPS which was more cost friendly then EC2 Server. on Jan 2024
+
+Now My project arrangements looks something similar to this
+
+![EC2 Sever along with Nginx, Docker and Jenkins Arrangement](/One%20Server%20Configuration%20for%20arpanahuone.png)
 
 ### Step 1: Dockerizing
 
@@ -584,10 +600,10 @@ access_log                  /var/log/nginx/supersecure.access.log;
 error_log                   /var/log/nginx/supersecure.error.log;
 
 server {
-  server_name               clock-work.arpansahu.me;        
+  server_name               arpansahu.me;        
   listen                    80;
   location / {
-    proxy_pass              http://{ip_of_home_server}:8012;
+    proxy_pass              http://{ip_of_home_server}:8000;
     proxy_set_header        Host $host;
   }
 }
@@ -676,7 +692,7 @@ Now It's time to enable HTTPS for this server
     error_log                   /var/log/nginx/supersecure.error.log;
      
     server {
-      server_name               clock-work.arpansahu.me;
+      server_name               arpansahu.me;
       listen                    80;
       return                    307 https://$host$request_uri;
     }
@@ -684,7 +700,7 @@ Now It's time to enable HTTPS for this server
     server {
     
       location / {
-        proxy_pass              http://{ip_of_home_server}:8012;
+        proxy_pass              http://{ip_of_home_server}:8000;
         proxy_set_header        Host $host;
         
         listen 443 ssl; # managed by Certbot
@@ -950,11 +966,29 @@ Now It's time to enable HTTPS for this server
          sudo acme-dns-client register \
          -d arpansahu.me -s http://localhost:8090
          ```
+
+         Above command is old now we will use the new command 
+         sudo acme-dns-client register \
+          -d arpansahu.me \
+          -allow 0.0.0.0/0 \
+          -s http://localhost:8080
+         ```
+
          Note: When we edited acme-dns config file there we mentioned the port 8090 and thats why we are using this port here also
        * Creating Another DNS Entry 
          ```
          CNAME Record	_acme-challenge	e6ac0f0a-0358-46d6-a9d3-8dd41f44c7ec.auth.arpansahu.me.	Automatic
          ```
+
+         Since the last update in  the last step now two more entries should be added 
+
+         ```
+         CAA Record @	0 issuewild "letsencrypt.org; validationmethods=dns-01; accounturi=https://acme-v02.api.letsencrypt.org/acme/acct/1424899626"  Automatic
+
+         CAA Record @	0 issue "letsencrypt.org; validationmethods=dns-01; accounturi=https://acme-v02.api.letsencrypt.org/acme/acct/1424899626"
+         Automatic
+         ```
+
          Same as an entry is needed to be added to complete one time challenge as in previously we did.
        * Check the entry is added successfully or not
          ```
@@ -1014,14 +1048,14 @@ error_log                   /var/log/nginx/supersecure.error.log;
 
 server {
     listen         80;
-    server_name    clock-work.arpansahu.me;
+    server_name    arpansahu.me;
     # force https-redirects
     if ($scheme = http) {
         return 301 https://$server_name$request_uri;
         }
 
     location / {
-         proxy_pass              http://{ip_of_home_server}:8012;
+         proxy_pass              http://{ip_of_home_server}:8000;
          proxy_set_header        Host $host;
          proxy_set_header    X-Forwarded-Proto $scheme;
 
@@ -1032,6 +1066,35 @@ server {
     }
    
 	
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/arpansahu.me/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/arpansahu.me/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+```
+
+Then add your borcelle-crm.arpansahu.me serber configuration to the  /etc/nginx/sites-available/arpansahu file
+```
+server {
+    listen         80;
+    server_name    clock-work.arpansahu.me;
+    # force https-redirects
+    if ($scheme = http) {
+        return 301 https://$server_name$request_uri;
+        }
+
+    location / {
+         proxy_pass               http://0.0.0.0:8012;
+         proxy_set_header        Host $host;
+         proxy_set_header    X-Forwarded-Proto $scheme;
+
+         # WebSocket support
+         proxy_http_version 1.1;
+         proxy_set_header Upgrade $http_upgrade;
+         proxy_set_header Connection "upgrade";
+    }
 
     listen 443 ssl; # managed by Certbot
     ssl_certificate /etc/letsencrypt/live/arpansahu.me/fullchain.pem; # managed by Certbot
@@ -1128,12 +1191,36 @@ sudo vi /etc/nginx/sites-available/arpansahu
 You can add all the server blocks to the same nginx configuration file
 just make sure you place the server block for base domain at the last
 
+* To copy .env from local server directory while buidling image
+
+add Jenkins ALL=(ALL) NOPASSWD: ALL
+inside /etc/sudoers file
+
+and then put 
+
+stage('Dependencies') {
+            steps {
+                script {
+                    sh "sudo cp /root/env/project_name/.env /var/lib/jenkins/workspace/project_name"
+                }
+            }
+        }
+
+in jenkinsfile
+
 * Now Create a file named Jenkinsfile at the root of Git Repo and add following lines to file
 
 ```
 pipeline {
     agent { label 'local' }
     stages {
+        stage('Dependencies') {
+            steps {
+                script {
+                    sh "sudo cp /root/projectenvs/clock_work/.env /var/lib/jenkins/workspace/clock_work"
+                }
+            }
+        }
         stage('Production') {
             steps {
                 script {
@@ -1207,14 +1294,14 @@ Note: agent {label 'local'} is used to specify which node will execute the jenki
 
 Make sure to use Pipline project and name it whatever you want I have named it as clock_work
 
-![Jenkins Project for borcelle CRM Configuration File](https://github.com/arpansahu/clock_work/blob/master/clock_work-Config-Jenkins-.png?raw=true)
+![Jenkins Project for borcelle CRM Configuration File](https://github.com/arpansahu/clock_work/blob/master/clock_work-Config-Jenkins.png?raw=true)
 
 In this above picture you can see credentials right? you can add your github credentials
 from Manage Jenkins on home Page --> Manage Credentials
 
 and add your GitHub credentials from there
 
-* Add a .env file to you project using following command
+* Add a .env file to you project using following command (This step is no more required stage('Dependencies'))
 
     ```
     sudo vi  /var/lib/jenkins/workspace/clock_work/.env
@@ -1252,11 +1339,15 @@ Now you are good to go.
 [![Jenkins](https://img.shields.io/badge/Jenkins-D24939?style=for-the-badge&logo=Jenkins&logoColor=white)](https://www.jenkins.io/)
 [![AWS](https://img.shields.io/badge/Amazon_AWS-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)](https://aws.amazon.com/)
 [![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)]()
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)]()
+
 
 
 ## Environment Variables
 
 To run this project, you will need to add the following environment variables to your .env file
+
+DATABASE_URL=
 
 REDISCLOUD_URL=
 
@@ -1266,20 +1357,25 @@ DEBUG=
 
 ALLOWED_HOSTS=
 
-DATABASE_URL=
-
 MAIL_JET_API_KEY=
 
 MAIL_JET_API_SECRET=
 
 MAIL_JET_EMAIL_ADDRESS=
 
+DOMAIN=
+
+PROTOCOL=
+
+# bucket
 AWS_ACCESS_KEY_ID=
 
 AWS_SECRET_ACCESS_KEY=
 
 AWS_STORAGE_BUCKET_NAME=
 
-DOMAIN=
 
-PROTOCOL=
+#Blackblaze
+AWS_S3_REGION_NAME=
+
+BUCKET_TYPE=
