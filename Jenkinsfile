@@ -4,7 +4,7 @@ pipeline {
         stage('Dependencies') {
             steps {
                 script {
-                    sh "sudo cp /root/projectenvs/borcelle_crm/.env /var/lib/jenkins/workspace/borcelle_crm"
+                    sh "sudo cp /root/projectenvs/clock_work/.env /var/lib/jenkins/workspace/clock_work"
                 }
             }
         }
