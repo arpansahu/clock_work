@@ -42,7 +42,10 @@ class ScheduleMail(views.JSONResponseMixin, views.AjaxResponseMixin, View):
         emails = request.POST.get('emails').split(' ')
         content = request.POST.get('content')
         date_time = request.POST.get('datetime')
-        date = datetime.datetime.strptime(date_time, '%Y-%m-%dT%H:%M:%S')
+        try:
+            date = datetime.datetime.strptime(date_time, '%Y-%m-%dT%H:%M:%S')
+        except:
+            date = datetime.datetime.strptime(date_time, '%Y-%m-%dT%H:%M')
         print(emails)
 
         try:
