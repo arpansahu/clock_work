@@ -780,7 +780,7 @@ Now It's time to enable HTTPS for this server
     ```
     
     It will be asking for domain name then you can enter your base domain 
-    I have generated ssl for clock-work.arpansahu.me
+    I have generated ssl for arpansahu.me
     
     Then a few questions will be asked by them answer them all and done your ssl certificate will be geerated
     
