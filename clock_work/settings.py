@@ -155,6 +155,7 @@ if not DEBUG:
 
     elif BUCKET_TYPE == 'MINIO':
         AWS_S3_ENDPOINT_URL = f'http://arpansahu.me:9002'
+        AWS_S3_USE_SSL=False
 
     AWS_DEFAULT_ACL = 'public-read'
     AWS_S3_OBJECT_PARAMETERS = {
