@@ -154,7 +154,7 @@ if not DEBUG:
         AWS_S3_ENDPOINT_URL = f'https://{AWS_S3_ENDPOINT}'
 
     elif BUCKET_TYPE == 'MINIO':
-        AWS_S3_ENDPOINT_URL = f'http://178.16.137.37:9002'
+        AWS_S3_ENDPOINT_URL = f'https://arpansahu.me:9002'
         # AWS_S3_USE_SSL=False
 
     AWS_DEFAULT_ACL = 'public-read'
