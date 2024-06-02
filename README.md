@@ -424,11 +424,6 @@ Comment Channel Layers Setting for Heroku on settings.py
   }
 ```
 
-Run Server
-```bash
-  python manage.py runserver
-```
-
 ## Deployment on Heroku
 
 Installing Heroku Cli from : https://devcenter.heroku.com/articles/heroku-cli
