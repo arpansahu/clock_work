@@ -75,16 +75,16 @@ spec:
                 secretKeyRef:
                   name: clock-work-secret
                   key: MAIL_JET_API_SECRET
-            - name: MAIL_JET_EMAIL_ADDRESS
+            - name: DOMAIN
               valueFrom:
                 secretKeyRef:
                   name: clock-work-secret
-                  key: MAIL_JET_EMAIL_ADDRESS
-            - name: MY_EMAIL_ADDRESS
+                  key: DOMAIN
+            - name: PROTOCOL
               valueFrom:
                 secretKeyRef:
                   name: clock-work-secret
-                  key: MY_EMAIL_ADDRESS
+                  key: PROTOCOL
           ports:
             - containerPort: 8012
               name: daphne
