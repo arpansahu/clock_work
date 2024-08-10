@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: clock-work-service
+spec:
+  selector:
+    app: clock-work
+  ports:
+    - protocol: TCP
+      port: 8012
+      targetPort: 8012
+      nodePort: 32012
+  type: NodePort
