@@ -1,4 +1,4 @@
-# Great Chat
+# Clock Work
 
 This WhatsApp clone project provides a comprehensive chat application with various advanced features. Below are the main components and functionalities of the project.
 
