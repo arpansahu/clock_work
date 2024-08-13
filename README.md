@@ -1,4 +1,4 @@
-# Great Chat
+# Clock Work
 
 This WhatsApp clone project provides a comprehensive chat application with various advanced features. Below are the main components and functionalities of the project.
 
@@ -3027,7 +3027,7 @@ Make sure to use Pipeline project and name it whatever you want I have named it 
 
 * Configure another Jenkins project from jenkins ui located at https://jenkins.arpansahu.me
 
-Make sure to use Pipeline project and name it whatever you want I have named it as {project_name}_build
+Make sure to use Pipeline project and name it whatever you want I have named it as clock_work_build
 
 ![Jenkins Build Pipeline Configuration](/Jenkins-build.png)
 
