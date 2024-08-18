@@ -220,8 +220,8 @@ to check if its running or not
 Use these CELERY settings
 
 ``` 
-CELERY_BROKER_URL = config("REDISCLOUD_URL")
-CELERY_RESULT_BACKEND = config("REDISCLOUD_URL")
+CELERY_BROKER_URL = config("REDIS_CLOUD_URL")
+CELERY_RESULT_BACKEND = config("REDIS_CLOUD_URL")
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -249,7 +249,7 @@ from decouple import config
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'clock_work.settings')
 
-redis_url = config("REDISCLOUD_URL")
+redis_url = config("REDIS_CLOUD_URL")
 
 app = Celery('clock_work', broker=redis_url, backend=redis_url, include=['tasks.tasks'])
 
@@ -291,7 +291,7 @@ Use these CACHE settings
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': config('REDISCLOUD_URL'),
+        'LOCATION': config('REDIS_CLOUD_URL'),
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         }
@@ -313,7 +313,7 @@ else:
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                "hosts": [(config('REDISCLOUD_URL'))],
+                "hosts": [(config('REDIS_CLOUD_URL'))],
             },
         },
     }
@@ -1706,11 +1706,11 @@ spec:
                 secretKeyRef:
                   name: clock-work-secret
                   key: DATABASE_URL
-            - name: REDISCLOUD_URL
+            - name: REDIS_CLOUD_URL
               valueFrom:
                 secretKeyRef:
                   name: clock-work-secret
-                  key: REDISCLOUD_URL
+                  key: REDIS_CLOUD_URL
             - name: MAIL_JET_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -4444,7 +4444,7 @@ PROTOCOL=
 
 DATABASE_URL=
 
-REDISCLOUD_URL=
+REDIS_CLOUD_URL=
 
 # deploy_kube.sh requirements
 HARBOR_USERNAME=
