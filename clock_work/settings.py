@@ -251,8 +251,8 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"), ]
 # CELERY_BROKER_URL = 'redis://localhost:6379'
 # CELERY_RESULT_BACKEND = 'django-db'
 
-CELERY_BROKER_URL = config("REDISCLOUD_URL")
-CELERY_RESULT_BACKEND = config("REDISCLOUD_URL")
+CELERY_BROKER_URL = config("REDIS_CLOUD_URL")
+CELERY_RESULT_BACKEND = config("REDIS_CLOUD_URL")
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -280,7 +280,7 @@ else:
             # This example is assuming you use redis, in which case `channels_redis` is another dependency.
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                "hosts": [config("REDISCLOUD_URL") ],
+                "hosts": [config("REDIS_CLOUD_URL") ],
             },
         },
     }
@@ -300,7 +300,7 @@ else:
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                "hosts": [(config('REDISCLOUD_URL'))],
+                "hosts": [(config('REDIS_CLOUD_URL'))],
             },
         },
     }
