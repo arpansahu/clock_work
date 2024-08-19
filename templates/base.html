@@ -26,18 +26,8 @@
   <script src="{% static 'js/jquery.js' %}"></script>
 
   <!-- Sentry SDK for JavaScript -->
-  <script src="https://browser.sentry-cdn.com/7.0.0/bundle.min.js" integrity="sha384-xyz" crossorigin="anonymous"></script>
-  <script src="https://browser.sentry-cdn.com/7.0.0/replay.min.js" integrity="sha384-xyz" crossorigin="anonymous"></script>
 
-  <script>
-      Sentry.init({
-          dsn: "https://b58a4b247617a4f7268c2f56fdc44023@o4507787065163776.ingest.us.sentry.io/4507802506625024",  // Replace with your Sentry DSN
-          integrations: [new Sentry.Replay()],
-          tracesSampleRate: 1.0,  // Adjust according to your needs
-          replaysSessionSampleRate: 0.1,  // 10% of sessions
-          replaysOnErrorSampleRate: 1.0,  // 100% of sessions with an error
-      });
-  </script>
+  <script src="https://js.sentry-cdn.com/b58a4b247617a4f7268c2f56fdc44023.min.js" crossorigin="anonymous"></script>
 
   <!-- Specific CSS goes HERE -->
   {% block stylesheets %}
