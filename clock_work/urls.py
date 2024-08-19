@@ -34,6 +34,14 @@ from notifications_app.views import (
 
 )
 
+def trigger_error(request):
+    division_by_zero = 1 / 0
+
+def large_resource(request):
+   time.sleep(4)
+   return HttpResponse("Done!")
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     re_path(r'^celery-progress/', include('celery_progress.urls')),
@@ -46,4 +54,8 @@ urlpatterns = [
     path('celery-progress/', include('celery_progress.urls')),
     path('test/notification/', test, name='test_notification'),
     re_path('tasks/', include('tasks.urls')),
+
+    #sentry test view 
+    path('sentry-debug/', trigger_error),
+    path('large_resource/', large_resource)
 ]

@@ -11,8 +11,12 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
 import os
-
 from decouple import config
+# import sentry_sdk
+# from sentry_sdk.integrations.django import DjangoIntegration
+# import django
+# from django.db.models.signals import pre_init
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -22,13 +26,27 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+# ============================ENV VARIABLES=====================================
 SECRET_KEY = config('SECRET_KEY')
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', cast=bool, default=False)
-
 ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(' ')
 
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+BUCKET_TYPE = config('BUCKET_TYPE')
+
+DATABASE_URL = config('DATABASE_URL')
+REDIS_CLOUD_URL = config('REDIS_CLOUD_URL')
+
+MAIL_JET_API_KEY = config('MAIL_JET_API_KEY')
+MAIL_JET_API_SECRET = config('MAIL_JET_API_SECRET')
+
+SENTRY_ENVIRONMENT = config('SENTRY_ENVIRONMENT')  # production Or "staging", "development", etc.
+SENTRY_DSH_URL = config('SENTRY_DSH_URL')
+
+PROJECT_NAME = 'clock_work'
+# ===============================================================================
 
 # Application definition
 
@@ -101,7 +119,7 @@ WSGI_APPLICATION = 'clock_work.wsgi.application'
 import dj_database_url
 # DATABASES['default'] =  dj_database_url.config()
 #updated
-DATABASES = {'default': dj_database_url.config(default=config('DATABASE_URL'))}
+DATABASES = {'default': dj_database_url.config(default=DATABASE_URL)}
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
@@ -142,13 +160,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 if not DEBUG:
-    BUCKET_TYPE = config('BUCKET_TYPE')
-
     if BUCKET_TYPE == 'AWS':
-
-        AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-        AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-        AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
         AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
         AWS_DEFAULT_ACL = 'public-read'
         AWS_S3_OBJECT_PARAMETERS = {
@@ -160,22 +172,18 @@ if not DEBUG:
             'Access-Control-Allow-Origin': '*',
         }
         # s3 static settings
-        AWS_STATIC_LOCATION = 'portfolio/clock_work/static'
+        AWS_STATIC_LOCATION = f'portfolio/{PROJECT_NAME}/static'
         STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_STATIC_LOCATION}/'
-        STATICFILES_STORAGE = 'clock_work.storage_backends.StaticStorage'
+        STATICFILES_STORAGE = f'{PROJECT_NAME}.storage_backends.StaticStorage'
         # s3 public media settings
-        AWS_PUBLIC_MEDIA_LOCATION = 'portfolio/clock_work/media'
+        AWS_PUBLIC_MEDIA_LOCATION = f'portfolio/{PROJECT_NAME}/media'
         MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_PUBLIC_MEDIA_LOCATION}/'
-        DEFAULT_FILE_STORAGE = 'clock_work.storage_backends.PublicMediaStorage'
+        DEFAULT_FILE_STORAGE = f'{PROJECT_NAME}.storage_backends.PublicMediaStorage'
         # s3 private media settings
-        PRIVATE_MEDIA_LOCATION = 'portfolio/clock_work/private'
-        PRIVATE_FILE_STORAGE = 'clock_work.storage_backends.PrivateMediaStorage'
+        PRIVATE_MEDIA_LOCATION = f'portfolio/{PROJECT_NAME}/private'
+        PRIVATE_FILE_STORAGE = f'{PROJECT_NAME}.storage_backends.PrivateMediaStorage'
 
     elif BUCKET_TYPE == 'BLACKBLAZE':
-
-        AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-        AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-        AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
         AWS_S3_REGION_NAME = 'us-east-005'
 
         AWS_S3_ENDPOINT = f's3.{AWS_S3_REGION_NAME}.backblazeb2.com'
@@ -192,21 +200,18 @@ if not DEBUG:
             'Access-Control-Allow-Origin': '*',
         }
         # s3 static settings
-        AWS_STATIC_LOCATION = 'portfolio/clock_work/static'
+        AWS_STATIC_LOCATION = f'portfolio/{PROJECT_NAME}/static'
         STATIC_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.{AWS_STATIC_LOCATION}/'
-        STATICFILES_STORAGE = 'clock_work.storage_backends.StaticStorage'
+        STATICFILES_STORAGE = f'{PROJECT_NAME}.storage_backends.StaticStorage'
         # s3 public media settings
-        AWS_PUBLIC_MEDIA_LOCATION = 'portfolio/clock_work/media'
+        AWS_PUBLIC_MEDIA_LOCATION = f'portfolio/{PROJECT_NAME}/media'
         MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.{AWS_PUBLIC_MEDIA_LOCATION}/'
-        DEFAULT_FILE_STORAGE = 'clock_work.storage_backends.PublicMediaStorage'
+        DEFAULT_FILE_STORAGE = f'{PROJECT_NAME}.storage_backends.PublicMediaStorage'
         # s3 private media settings
-        PRIVATE_MEDIA_LOCATION = 'portfolio/clock_work/private'
-        PRIVATE_FILE_STORAGE = 'clock_work.storage_backends.PrivateMediaStorage'
+        PRIVATE_MEDIA_LOCATION = f'portfolio/{PROJECT_NAME}/private'
+        PRIVATE_FILE_STORAGE = f'{PROJECT_NAME}.storage_backends.PrivateMediaStorage'
 
     elif BUCKET_TYPE == 'MINIO':
-        AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-        AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-        AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
         AWS_S3_REGION_NAME = 'us-east-1'  # MinIO doesn't require this, but boto3 does
         AWS_S3_ENDPOINT_URL = 'https://minio.arpansahu.me'
         AWS_DEFAULT_ACL = 'public-read'
@@ -220,21 +225,18 @@ if not DEBUG:
         }
 
         # s3 static settings
-        AWS_STATIC_LOCATION = 'portfolio/clock_work/static'
+        AWS_STATIC_LOCATION = f'portfolio/{PROJECT_NAME}/static'
         STATIC_URL = f'https://{AWS_STORAGE_BUCKET_NAME}/{AWS_STATIC_LOCATION}/'
-        STATICFILES_STORAGE = 'clock_work.storage_backends.StaticStorage'
+        STATICFILES_STORAGE = f'{PROJECT_NAME}.storage_backends.StaticStorage'
 
         # s3 public media settings
-        AWS_PUBLIC_MEDIA_LOCATION = 'portfolio/clock_work/media'
+        AWS_PUBLIC_MEDIA_LOCATION = f'portfolio/{PROJECT_NAME}/media'
         MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}/{AWS_PUBLIC_MEDIA_LOCATION}/'
-        DEFAULT_FILE_STORAGE = 'clock_work.storage_backends.PublicMediaStorage'
+        DEFAULT_FILE_STORAGE = f'{PROJECT_NAME}.storage_backends.PublicMediaStorage'
 
         # s3 private media settings
         PRIVATE_MEDIA_LOCATION = 'portfolio/clock_work/private'
         PRIVATE_FILE_STORAGE = 'clock_work.storage_backends.PrivateMediaStorage'
-
-    
-
 else:
     # Static files (CSS, JavaScript, Images)
     # https://docs.djangoproject.com/en/3.2/howto/static-files/
@@ -251,8 +253,8 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"), ]
 # CELERY_BROKER_URL = 'redis://localhost:6379'
 # CELERY_RESULT_BACKEND = 'django-db'
 
-CELERY_BROKER_URL = config("REDIS_CLOUD_URL")
-CELERY_RESULT_BACKEND = config("REDIS_CLOUD_URL")
+CELERY_BROKER_URL = REDIS_CLOUD_URL
+CELERY_RESULT_BACKEND = REDIS_CLOUD_URL
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -262,45 +264,126 @@ CELERY_TIMEZONE = 'Asia/Kolkata'
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
-MAIL_JET_API_KEY = config('MAIL_JET_API_KEY')
-MAIL_JET_API_SECRET = config('MAIL_JET_API_SECRET')
-
 try:
     import channels
 except ImportError:
-    pass
+    raise ImportError("Channels must be installed for this project to work.")
 else:
     INSTALLED_APPS.insert(0, 'channels')
     INSTALLED_APPS.append('celery_progress.websockets')
 
     ASGI_APPLICATION = 'clock_work.routing.application'
 
-    CHANNEL_LAYERS = {
-        'default': {
-            # This example is assuming you use redis, in which case `channels_redis` is another dependency.
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                "hosts": [config("REDIS_CLOUD_URL") ],
+    # Remove this redundant CHANNEL_LAYERS block if it's not needed.
+    if not DEBUG:
+        CHANNEL_LAYERS = {
+            'default': {
+                "BACKEND": "channels.layers.InMemoryChannelLayer",
+            }
+        }
+    else:
+        CHANNEL_LAYERS = {
+            "default": {
+                "BACKEND": "channels_redis.core.RedisChannelLayer",
+                "CONFIG": {
+                    "hosts": [(REDIS_CLOUD_URL)],
+                },
             },
-        },
-    }
+        }
 
 
 
-#Caching
 #Caching
 if not DEBUG:
-    CHANNEL_LAYERS = {
+    CACHES = {
         'default': {
-            "BACKEND": "channels.layers.InMemoryChannelLayer",
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_CLOUD_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': PROJECT_NAME
         }
     }
 else:
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [(config('REDIS_CLOUD_URL'))],
-            },
-        },
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+        }
     }
+
+
+# Get the current git commit hash
+def get_git_commit_hash():
+    try:
+        return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
+    except Exception:
+        return None
+
+# sentry_sdk.init(
+#     dsn=SENTRY_DSH_URL,
+#     integrations=[
+#             DjangoIntegration(
+#                 transaction_style='url',
+#                 middleware_spans=True,
+#                 signals_spans=True,
+#                 signals_denylist=[
+#                     django.db.models.signals.pre_init,
+#                     django.db.models.signals.post_init,
+#                 ],
+#                 cache_spans=False,
+#             ),
+#         ],
+#     traces_sample_rate=1.0,  # Adjust this according to your needs
+#     send_default_pii=True,  # To capture personal identifiable information (optional)
+#     release=get_git_commit_hash(),  # Set the release to the current git commit hash
+#     environment=SENTRY_ENVIRONMENT,  # Or "staging", "development", etc.
+#     profiles_sample_rate=1.0,
+# )
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#         },
+#         'sentry': {
+#             'level': 'ERROR',  # Change this to WARNING or INFO if needed
+#             'class': 'sentry_sdk.integrations.logging.EventHandler',
+#             'formatter': 'verbose',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['console', 'sentry'],
+#             'level': 'INFO',
+#             'propagate': False,
+#         },
+#         'django.request': {
+#             'handlers': ['console', 'sentry'],
+#             'level': 'ERROR',  # Only log errors to Sentry
+#             'propagate': False,
+#         },
+#         'django.db.backends': {
+#             'handlers': ['console', 'sentry'],
+#             'level': 'ERROR',  # Only log errors to Sentry
+#             'propagate': False,
+#         },
+#         'django.security': {
+#             'handlers': ['console', 'sentry'],
+#             'level': 'WARNING',  # You can set this to INFO or DEBUG as needed
+#             'propagate': False,
+#         },
+#         # You can add more loggers here if needed
+#     },
+#     'formatters': {
+#         'verbose': {
+#             'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+#         },
+#     },
+# }
+
+# CSRF_TRUSTED_ORIGINS = ['https://arpansahu.me', ]
