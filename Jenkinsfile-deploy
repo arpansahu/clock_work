@@ -13,10 +13,10 @@ pipeline {
         ENV_PROJECT_NAME = "clock_work"
         DOCKER_PORT = "8012"
         PROJECT_NAME_WITH_DASH = "clock-work"
-        BUILD_PROJECT_NAME = "arpansahu_dot_me_build"
+        BUILD_PROJECT_NAME = "clock_work_build"
         JENKINS_DOMAIN = "jenkins.arpansahu.me"
         SENTRY_ORG="arpansahu"
-        SENTRY_PROJECT="arpansahu_dot_me"
+        SENTRY_PROJECT="clock_work"
     }
     stages {
         stage('Initialize') {
