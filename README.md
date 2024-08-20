@@ -1206,13 +1206,15 @@ version: '3'
 
 services:
   web:
-    build: .
+    build:  # This section will be used when running locally
+      context: .
+      dockerfile: Dockerfile
+    image: harbor.arpansahu.me/library/clock_work:latest
     env_file: ./.env
     command: bash -c "python manage.py makemigrations && python manage.py migrate && daphne clock_work.asgi:application -b 0.0.0.0 --port 8012 & celery -A clock_work.celery worker -l info & celery -A clock_work beat -l INFO"
-    image: clock_work
     container_name: clock_work
     volumes:
-      - .:/clock_work
+      - .:/app
     ports:
       - "8012:8012"
     restart: unless-stopped
@@ -2808,6 +2810,7 @@ pipeline {
                         '''
                         // Deploy using Docker Compose
                         sh 'docker-compose down'
+                        sh 'docker-compose pull'
                         sh 'docker-compose up -d'
 
                         // Wait for a few seconds to let the app start
