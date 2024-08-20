@@ -121,6 +121,7 @@ pipeline {
                         '''
                         // Deploy using Docker Compose
                         sh 'docker-compose down'
+                        sh 'docker-compose pull'
                         sh 'docker-compose up -d'
 
                         // Wait for a few seconds to let the app start
