@@ -235,8 +235,8 @@ if not DEBUG:
         DEFAULT_FILE_STORAGE = f'{PROJECT_NAME}.storage_backends.PublicMediaStorage'
 
         # s3 private media settings
-        PRIVATE_MEDIA_LOCATION = 'portfolio/clock_work/private'
-        PRIVATE_FILE_STORAGE = 'clock_work.storage_backends.PrivateMediaStorage'
+        PRIVATE_MEDIA_LOCATION = f'portfolio/{PROJECT_NAME}/private'
+        PRIVATE_FILE_STORAGE = f'{PROJECT_NAME}.storage_backends.PrivateMediaStorage'
 else:
     # Static files (CSS, JavaScript, Images)
     # https://docs.djangoproject.com/en/3.2/howto/static-files/
@@ -264,55 +264,36 @@ CELERY_TIMEZONE = 'Asia/Kolkata'
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
-try:
-    import channels
-except ImportError:
-    raise ImportError("Channels must be installed for this project to work.")
-else:
-    INSTALLED_APPS.insert(0, 'channels')
-    INSTALLED_APPS.append('celery_progress.websockets')
 
-    ASGI_APPLICATION = 'clock_work.routing.application'
+INSTALLED_APPS.insert(0, 'channels')
+INSTALLED_APPS.append('celery_progress.websockets')
 
-    # Remove this redundant CHANNEL_LAYERS block if it's not needed.
-    if not DEBUG:
-        CHANNEL_LAYERS = {
-            'default': {
-                "BACKEND": "channels.layers.InMemoryChannelLayer",
-            }
-        }
-    else:
-        CHANNEL_LAYERS = {
-            "default": {
-                "BACKEND": "channels_redis.core.RedisChannelLayer",
-                "CONFIG": {
-                    "hosts": [(REDIS_CLOUD_URL)],
-                },
-            },
-        }
+ASGI_APPLICATION = 'clock_work.routing.application'
 
+
+# Channels
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(REDIS_CLOUD_URL)],
+        },
+    },
+}
 
 
 #Caching
-if not DEBUG:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': REDIS_CLOUD_URL,
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            },
-            'KEY_PREFIX': PROJECT_NAME
-        }
-    }
-else:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'unique-snowflake',
-        }
-    }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_CLOUD_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': PROJECT_NAME
+    }
+}    
 
 # Get the current git commit hash
 def get_git_commit_hash():
