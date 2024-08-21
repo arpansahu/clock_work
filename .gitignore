@@ -58,3 +58,6 @@ tmtagsHistory
 socialauth
 
 **/migrations/**
+
+supervisord.log
+supervisord.pid
