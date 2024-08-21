@@ -25,3 +25,5 @@ spec:
           ports:
             - containerPort: 8012
               name: daphne
+            - containerPort: 8051
+              name: celery-flower
