@@ -1686,6 +1686,8 @@ spec:
           ports:
             - containerPort: 8012
               name: daphne
+            - containerPort: 8051
+              name: celery-flower
 ```
 
 3. Create a service.yaml file and fill it with the below contents.
@@ -1703,6 +1705,10 @@ spec:
       port: 8012
       targetPort: 8012
       nodePort: 32012
+    - protocol: TCP
+      port: 8051
+      targetPort: 8051
+      nodePort: 32051
   type: NodePort
 ```
 
