@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 
 import os
 from decouple import config
+
 # import sentry_sdk
 # from sentry_sdk.integrations.django import DjangoIntegration
 # import django
@@ -49,6 +50,7 @@ PROJECT_NAME = 'clock_work'
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -95,7 +97,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'clock_work.wsgi.application'
+# WSGI_APPLICATION = 'clock_work.wsgi.application'
 
 
 # Database
