@@ -155,6 +155,7 @@ pipeline {
                                 # Update Nginx configuration if status code is 200 (OK)
                                 if [ "\$HTTP_STATUS" -eq 200 ]; then
                                     sudo sed -i 's|proxy_pass .*;|proxy_pass http://0.0.0.0:${DOCKER_PORT};|' ${NGINX_CONF}
+                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://0.0.0.0:${FLOWER_PORT};|' ${NGINX_CONF}
                                     sudo nginx -s reload
                                     echo 'Nginx configuration updated and reloaded successfully.'
                                 else
@@ -216,6 +217,9 @@ pipeline {
                             def nodePort = sh(script: "kubectl get service ${PROJECT_NAME_WITH_DASH}-service -o=jsonpath='{.spec.ports[0].nodePort}'", returnStdout: true).trim()
                             echo "Service NodePort: ${nodePort}"
 
+                            def nodePortFlower = sh(script: "kubectl get service ${PROJECT_NAME_WITH_DASH}-service -o=jsonpath='{.spec.ports[1].nodePort}'", returnStdout: true).trim()
+                            echo "Service NodePortFlower: ${nodePortFlower}"
+
                             // Get cluster IP address
                             def clusterIP = sh(script: "kubectl get nodes -o=jsonpath='{.items[0].status.addresses[0].address}'", returnStdout: true).trim()
                             echo "Cluster IP: ${clusterIP}"
@@ -230,7 +234,7 @@ pipeline {
 
                                     echo "Updating Nginx configuration at ${NGINX_CONF}..."
                                     sudo sed -i 's|proxy_pass .*;|proxy_pass http://${clusterIP}:${nodePort};|' ${NGINX_CONF}
-                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://${clusterIP}:${FLOWER_PORT};|' ${NGINX_CONF_FLOWER}
+                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://${clusterIP}:${nodePortFlower};|' ${NGINX_CONF_FLOWER}
                                     
                                     if [ \$? -ne 0 ]; then
                                         echo "Failed to update Nginx configuration"
