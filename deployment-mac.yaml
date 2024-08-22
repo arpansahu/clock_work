@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clock-work-mac-app
+  labels:
+    app: clock-work-mac
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clock-work-mac
+  template:
+    metadata:
+      labels:
+        app: clock-work-mac
+    spec:
+      imagePullSecrets:
+        - name: harbor-registry-secret
+      containers:
+        - image: harbor.arpansahu.me/library/clock_work_mac:latest
+          name: clock-work-mac
+          envFrom:
+            - secretRef:
+                name: clock-work-secret
+          ports:
+            - containerPort: 8012
+              name: daphne

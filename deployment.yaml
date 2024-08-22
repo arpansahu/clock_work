@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clock-work-app
+  labels:
+    app: clock-work
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clock-work
+  template:
+    metadata:
+      labels:
+        app: clock-work
+    spec:
+      imagePullSecrets:
+        - name: harbor-registry-secret
+      containers:
+        - image: harbor.arpansahu.me/library/clock_work:latest
+          name: clock-work
+          envFrom:
+            - secretRef:
+                name: clock-work-secret
+          ports:
+            - containerPort: 8012
+              name: daphne
+            - containerPort: 8051
+              name: celery-flower
