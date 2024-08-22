@@ -2847,8 +2847,10 @@ pipeline {
         IMAGE_TAG = "latest"  // or use a specific tag if needed
         KUBECONFIG = "${env.WORKSPACE}/kubeconfig"  // Set the KUBECONFIG environment variable
         NGINX_CONF = "/etc/nginx/sites-available/clock-work"
+        NGINX_CONF_FLOWER = "/etc/nginx/sites-available/flower-clock-work"
         ENV_PROJECT_NAME = "clock_work"
         DOCKER_PORT = "8012"
+        FLOWER_PORT = "8051"
         PROJECT_NAME_WITH_DASH = "clock-work"
         BUILD_PROJECT_NAME = "clock_work_build"
         JENKINS_DOMAIN = "jenkins.arpansahu.me"
@@ -3065,6 +3067,7 @@ pipeline {
 
                                     echo "Updating Nginx configuration at ${NGINX_CONF}..."
                                     sudo sed -i 's|proxy_pass .*;|proxy_pass http://${clusterIP}:${nodePort};|' ${NGINX_CONF}
+                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://${clusterIP}:${FLOWER_PORT};|' ${NGINX_CONF_FLOWER}
                                     
                                     if [ \$? -ne 0 ]; then
                                         echo "Failed to update Nginx configuration"
