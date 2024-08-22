@@ -61,5 +61,6 @@ socialauth
 
 env
 venv
+new_env
 supervisord.pid
 supervisord.log
