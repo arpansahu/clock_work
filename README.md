@@ -319,6 +319,129 @@ else:
     }
 ```
 
+Use these CACHE settings
+
+```python
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_CLOUD_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': PROJECT_NAME
+    }
+}
+
+```
+
+Use these Channels Settings
+
+```python
+try:
+    import channels
+except ImportError:
+    pass
+else:
+    INSTALLED_APPS.insert(0, 'channels')
+    INSTALLED_APPS.append('celery_progress.websockets')
+
+    ASGI_APPLICATION = 'clock_work.routing.application'
+
+    CHANNEL_LAYERS = {
+        'default': {
+            # This example is assuming you use redis, in which case `channels_redis` is another dependency.
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [config("REDIS_CLOUD_URL") ],
+            },
+        },
+    }
+```
+
+Use these Sentry Settings for Logging
+
+```python
+def get_git_commit_hash():
+    try:
+        return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
+    except Exception:
+        return None
+
+sentry_sdk.init(
+    dsn=SENTRY_DSH_URL,
+    integrations=[
+            DjangoIntegration(
+                transaction_style='url',
+                middleware_spans=True,
+                signals_spans=True,
+                signals_denylist=[
+                    django.db.models.signals.pre_init,
+                    django.db.models.signals.post_init,
+                ],
+                cache_spans=False,
+            ),
+        ],
+    traces_sample_rate=1.0,  # Adjust this according to your needs
+    send_default_pii=True,  # To capture personal identifiable information (optional)
+    release=get_git_commit_hash(),  # Set the release to the current git commit hash
+    environment=SENTRY_ENVIRONMENT,  # Or "staging", "development", etc.
+    profiles_sample_rate=1.0,
+)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
+        'sentry': {
+            'level': 'ERROR',  # Change this to WARNING or INFO if needed
+            'class': 'sentry_sdk.integrations.logging.EventHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'sentry'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console', 'sentry'],
+            'level': 'ERROR',  # Only log errors to Sentry
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': ['console', 'sentry'],
+            'level': 'ERROR',  # Only log errors to Sentry
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['console', 'sentry'],
+            'level': 'WARNING',  # You can set this to INFO or DEBUG as needed
+            'propagate': False,
+        },
+        # You can add more loggers here if needed
+    },
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+    },
+}
+```
+
+Also for setting up relays include Loader Script in base.html
+
+```html
+<script src="https://js.sentry-cdn.com/{random_unique_code_get_from_sentry_ui}.min.js" crossorigin="anonymous"></script>
+```
+
+
 Change settings.py static files and media files settings | Now I have added support for BlackBlaze Static Storage also which also based on AWS S3 protocols 
 
 ```python
@@ -517,6 +640,9 @@ include_files = {
     "README of Readme Manager": "https://raw.githubusercontent.com/arpansahu/common_readme/main/Readme%20manager/readme_manager.md",
     "AWS DEPLOYMENT INTRODUCTION": "https://raw.githubusercontent.com/arpansahu/common_readme/main/Introduction/aws_desployment_introduction.md",
     "STATIC_FILES": "https://raw.githubusercontent.com/arpansahu/common_readme/main/Introduction/static_files_settings.md",
+    "SENTRY": "https://raw.githubusercontent.com/arpansahu/common_readme/main/Introduction/sentry.md",
+    "CHANNELS": "https://raw.githubusercontent.com/arpansahu/common_readme/main/Introduction/channels.md",
+    "CACHE": "https://raw.githubusercontent.com/arpansahu/common_readme/main/Introduction/cache.md",
     "README of Harbor" : "https://raw.githubusercontent.com/arpansahu/common_readme/main/AWS%20Deployment/harbor/harbor.md",
     "HARBOR DOCKER COMPOSE": "https://raw.githubusercontent.com/arpansahu/common_readme/main/AWS%20Deployment/harbor/docker-compose.md",
     "INCLUDE FILES": "https://raw.githubusercontent.com/arpansahu/common_readme/main/include_files.py",
@@ -4465,16 +4591,6 @@ MAIL_JET_API_KEY=
 
 MAIL_JET_API_SECRET=
 
-# bucket
-# AWS_ACCESS_KEY_ID=
-
-# AWS_SECRET_ACCESS_KEY=
-
-# AWS_STORAGE_BUCKET_NAME=
-
-# BUCKET_TYPE=
-
-#MINIO
 AWS_ACCESS_KEY_ID=
 
 AWS_SECRET_ACCESS_KEY=
@@ -4483,13 +4599,13 @@ AWS_STORAGE_BUCKET_NAME=
 
 BUCKET_TYPE=
 
-DOMAIN=
-
-PROTOCOL=
-
 DATABASE_URL=
 
 REDIS_CLOUD_URL=
+
+DOMAIN= 
+
+PROTOCOL=
 
 # SENTRY
 SENTRY_ENVIRONMENT=
