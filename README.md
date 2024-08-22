@@ -2992,7 +2992,7 @@ pipeline {
                                 # Update Nginx configuration if status code is 200 (OK)
                                 if [ "\$HTTP_STATUS" -eq 200 ]; then
                                     sudo sed -i 's|proxy_pass .*;|proxy_pass http://0.0.0.0:${DOCKER_PORT};|' ${NGINX_CONF}
-                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://0.0.0.0:${FLOWER_PORT};|' ${NGINX_CONF}
+                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://0.0.0.0:${FLOWER_PORT};|' ${NGINX_CONF_FLOWER}
                                     sudo nginx -s reload
                                     echo 'Nginx configuration updated and reloaded successfully.'
                                 else
