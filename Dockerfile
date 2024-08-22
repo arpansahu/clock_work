@@ -2,12 +2,23 @@ FROM python:3.10.7
 
 WORKDIR /app
 
-COPY requirements.txt requirements.txt
+# Copy only requirements.txt first to leverage Docker cache
+COPY requirements.txt .
 
+# Install dependencies
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Install supervisord
+RUN apt-get update && apt-get install -y supervisor
+
+# Copy the rest of the application
 COPY . .
 
-RUN pip3 install -r requirements.txt
+# Copy supervisord configuration file
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-EXPOSE 8012
+# Expose necessary ports
+EXPOSE 8012 8051
 
-CMD daphne clock_work.asgi:application -b 0.0.0.0 --port 8012 & celery -A clock_work.celery worker -l info & celery -A clock_work beat -l INFO
+# Start supervisord to manage the processes
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

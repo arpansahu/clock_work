@@ -58,3 +58,6 @@ tmtagsHistory
 socialauth
 
 **/migrations/**
+
+env
+venv
