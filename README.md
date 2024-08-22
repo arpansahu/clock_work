@@ -1827,15 +1827,18 @@ spec:
   selector:
     app: clock-work
   ports:
-    - protocol: TCP
+    - name: uvicorn
+      protocol: TCP
       port: 8012
       targetPort: 8012
       nodePort: 32012
-    - protocol: TCP
+    - name: celery-flower
+      protocol: TCP
       port: 8051
       targetPort: 8051
       nodePort: 32051
   type: NodePort
+
 ```
 
 4. Create Env Secret for the project
