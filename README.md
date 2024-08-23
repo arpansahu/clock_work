@@ -1329,7 +1329,6 @@ RUN apt-get update && apt-get install -y supervisor
 COPY . .
 
 # Copy supervisord configuration file
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Expose necessary ports
 EXPOSE 8012 8051
@@ -1814,6 +1813,7 @@ spec:
               name: daphne
             - containerPort: 8051
               name: celery-flower
+  revisionHistoryLimit: 0
 ```
 
 3. Create a service.yaml file and fill it with the below contents.
