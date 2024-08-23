@@ -27,3 +27,4 @@ spec:
               name: daphne
             - containerPort: 8051
               name: celery-flower
+  revisionHistoryLimit: 0

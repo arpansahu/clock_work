@@ -15,7 +15,6 @@ RUN apt-get update && apt-get install -y supervisor
 COPY . .
 
 # Copy supervisord configuration file
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Expose necessary ports
 EXPOSE 8012 8051
