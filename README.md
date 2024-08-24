@@ -30,6 +30,9 @@ This WhatsApp clone project provides a comprehensive chat application with vario
 
 [alt text](https://github.com/arpansahu/clock_work/blob/master/explanation.png?raw=true)
 
+## Flower 
+
+1. Flower admin panel integrated to observe celery workers
 
 
 -Deployed on AWS / Now in My Own Home Ubuntu Server LTS 22.0 / Hostinger VPS Server
@@ -167,9 +170,8 @@ The most common Redis use cases are session cache, full-page cache, queues, lead
 
 Available at: https://clock-work.arpansahu.me
 
-admin login details:--
-username: admin@arpansahu.me
-password: showmecode
+Flower Panel Available at: https://flower-clock-wrok.arpansahu.me
+Login credentials required
 
 ## License
 
