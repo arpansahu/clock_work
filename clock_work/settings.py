@@ -262,8 +262,6 @@ CELERY_TASK_DEFAULT_QUEUE = 'clock_work_queue'
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
-MAIL_JET_API_KEY = config('MAIL_JET_API_KEY')
-MAIL_JET_API_SECRET = config('MAIL_JET_API_SECRET')
 
 try:
     import channels
@@ -280,7 +278,7 @@ else:
             # This example is assuming you use redis, in which case `channels_redis` is another dependency.
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                "hosts": [config("REDIS_CLOUD_URL") ],
+                "hosts": [REDIS_CLOUD_URL],
             },
         },
     }
