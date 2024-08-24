@@ -105,7 +105,7 @@ Run Server
 
   or 
 
-  daphne -b 0.0.0.0 -p [PROJECT_DOCKER_PORT] [JENKINS PROJECT NAME].asgi:application
+  uvicorn --host 0.0.0.0 --port [PROJECT_DOCKER_PORT] [JENKINS PROJECT NAME].asgi:application
 ```
 
 [CACHE]
