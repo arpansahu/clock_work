@@ -170,7 +170,7 @@ The most common Redis use cases are session cache, full-page cache, queues, lead
 
 Available at: https://clock-work.arpansahu.me
 
-Flower Panel Available at: https://flower-clock-wrok.arpansahu.me
+Flower Panel Available at: https://flower-clock-work.arpansahu.me
 Login credentials required
 
 ## License
