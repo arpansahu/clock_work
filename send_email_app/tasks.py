@@ -15,7 +15,7 @@ from mailjet_rest import Client
 mailjet = Client(auth=(settings.MAIL_JET_API_KEY, settings.MAIL_JET_API_SECRET), version='v3.1')
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, name='clock_work.send_email_app.send_mail_func')
 def send_mail_func(self):
     users = get_user_model().objects.all()
     for user in users:
@@ -54,7 +54,7 @@ def send_mail_func(self):
     return "Done"
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, name='clock_work.send_email_app.send_mail_task')
 def send_mail_task(self, emails, headline, content):
     progress_recorder = ProgressRecorder(self)
     for email_no in range(len(emails)):
@@ -95,7 +95,7 @@ def send_mail_task(self, emails, headline, content):
     return "Done"
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, name='clock_work.send_email_app.send_mail_task_with_schedule')
 def send_mail_task_with_schedule(self, emails, headline, content):
     for email_no in range(len(emails)):
         # mail_subject = headline
@@ -141,7 +141,7 @@ def send_mail_task_with_schedule(self, emails, headline, content):
     return "Done"
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, name='clock_work.send_email_app.ws_task')
 def ws_task(self, number):
     progress_recorder = WebSocketProgressRecorder(self)
     for i in range(number):
@@ -150,7 +150,7 @@ def ws_task(self, number):
     return int(random() * 1000)
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, name='clock_work.send_email_app.web_socket_send_mail_task')
 def web_socket_send_mail_task(self, emails, headline, content):
     progress_recorder = WebSocketProgressRecorder(self)
     for email_no in range(len(emails)):

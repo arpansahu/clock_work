@@ -6,7 +6,7 @@ from celery_progress.backend import ProgressRecorder
 from celery_progress.websockets.backend import WebSocketProgressRecorder
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, name='clock_work.tasks.http_task')
 def http_task(self, number):
     progress_recorder = ProgressRecorder(self)
     for i in range(number):
@@ -15,7 +15,7 @@ def http_task(self, number):
     return int(random()*1000)
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, name='clock_work.tasks.http_error_task')
 def http_error_task(self, number):
     progress_recorder = ProgressRecorder(self)
     for i in range(number):
@@ -26,7 +26,7 @@ def http_error_task(self, number):
     return random()*1000
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, name='clock_work.tasks.ws_task')
 def ws_task(self, number):
     progress_recorder = WebSocketProgressRecorder(self)
     for i in range(number):
@@ -35,7 +35,7 @@ def ws_task(self, number):
     return int(random()*1000)
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, name='clock_work.tasks.ws_error_tasks')
 def ws_error_task(self, number):
     progress_recorder = WebSocketProgressRecorder(self)
     for i in range(number):
