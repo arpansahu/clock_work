@@ -20,4 +20,4 @@ COPY . .
 EXPOSE 8012 8051
 
 # Start supervisord to manage the processes
-CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["supervisord", "-c", "supervisord.conf"]
