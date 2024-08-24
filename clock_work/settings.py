@@ -249,10 +249,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"), ]
 
 # CELERY STUFF
-# CELERY_BROKER_URL = 'redis://localhost:6379'
 CELERY_BROKER_URL = config("REDIS_CLOUD_URL")
 CELERY_RESULT_BACKEND = config("REDIS_CLOUD_URL")
-# CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
