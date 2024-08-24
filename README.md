@@ -229,6 +229,7 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Kolkata'
+CELERY_TASK_DEFAULT_QUEUE = 'clock_work_queue'
 ```
 
 
@@ -287,39 +288,6 @@ Run Server
   or 
 
   daphne -b 0.0.0.0 -p 8012 clock_work.asgi:application
-```
-Use these CACHE settings
-
-```python
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': config('REDIS_CLOUD_URL'),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
-    }
-}
-```
-
-Use these Channels Settings
-
-```python
-if not DEBUG:
-    CHANNEL_LAYERS = {
-        'default': {
-            "BACKEND": "channels.layers.InMemoryChannelLayer",
-        }
-    }
-else:
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [(config('REDIS_CLOUD_URL'))],
-            },
-        },
-    }
 ```
 
 Use these CACHE settings
