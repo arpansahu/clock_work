@@ -218,8 +218,6 @@ to check if its running or not
   sudo systemctl status redis
 ```
 
---------------------------
-
 Use these CELERY settings
 
 ``` 
