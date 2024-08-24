@@ -287,7 +287,7 @@ Run Server
 
   or 
 
-  daphne -b 0.0.0.0 -p 8012 clock_work.asgi:application
+  uvicorn --host 0.0.0.0 --port 8012 clock_work.asgi:application
 ```
 
 Use these CACHE settings
@@ -1781,7 +1781,7 @@ spec:
                 name: clock-work-secret
           ports:
             - containerPort: 8012
-              name: daphne
+              name: uvicorn
             - containerPort: 8051
               name: celery-flower
   revisionHistoryLimit: 0
