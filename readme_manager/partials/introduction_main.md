@@ -30,3 +30,6 @@ This WhatsApp clone project provides a comprehensive chat application with vario
 
 [alt text](https://github.com/arpansahu/clock_work/blob/master/explanation.png?raw=true)
 
+## Flower 
+
+1. Flower admin panel integrated to observe celery workers

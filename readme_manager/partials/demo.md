@@ -1,5 +1,4 @@
 Available at: https://[DOMAIN_NAME]
 
-admin login details:--
-username: admin@arpansahu.me
-password: showmecode
+Flower Panel Available at: https://flower-clock-wrok.arpansahu.me
+Login credentials required
