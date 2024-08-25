@@ -276,37 +276,6 @@ Run Server
   uvicorn --host 0.0.0.0 --port 8012 clock_work.asgi:application
 ```
 
-Use these CACHE settings
-
-```python
-
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_CLOUD_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        },
-        'KEY_PREFIX': PROJECT_NAME
-    }
-}
-
-```
-
-Use these Channels Settings
-
-```python
-CHANNEL_LAYERS = {
-    'default': {
-        # This example is assuming you use redis, in which case `channels_redis` is another dependency.
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [REDIS_CLOUD_URL],
-        },
-    },
-}
-```
-
 Change settings.py static files and media files settings | Now I have added support for BlackBlaze Static Storage also which also based on AWS S3 protocols 
 
 ```python
@@ -411,6 +380,37 @@ python manage.py collectstatic
 
 and you are good to go
 
+
+Use these CACHE settings
+
+```python
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_CLOUD_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': PROJECT_NAME
+    }
+}
+
+```
+
+Use these Channels Settings
+
+```python
+CHANNEL_LAYERS = {
+    'default': {
+        # This example is assuming you use redis, in which case `channels_redis` is another dependency.
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [REDIS_CLOUD_URL],
+        },
+    },
+}
+```
 
 Use these Sentry Settings for Logging
 
