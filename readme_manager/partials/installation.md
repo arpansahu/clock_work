@@ -98,9 +98,9 @@ Run Server
 
 [CHANNELS]
 
-[SENTRY]
-
 [STATIC_FILES]
+
+[SENTRY]
 
 ## Custom Django Management Commands
 
