@@ -94,11 +94,11 @@ Run Server
   uvicorn --host 0.0.0.0 --port [PROJECT_DOCKER_PORT] [JENKINS PROJECT NAME].asgi:application
 ```
 
+[STATIC_FILES]
+
 [CACHE]
 
 [CHANNELS]
-
-[STATIC_FILES]
 
 [SENTRY]
 
