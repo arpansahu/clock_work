@@ -2803,6 +2803,7 @@ pipeline {
         DOCKER_PORT = "8012"
         FLOWER_PORT = "8051"
         PROJECT_NAME_WITH_DASH = "clock-work"
+        SERVER_NAME= "clock-work.arpansahu.me"
         BUILD_PROJECT_NAME = "clock_work_build"
         JENKINS_DOMAIN = "jenkins.arpansahu.me"
         SENTRY_ORG="arpansahu"
