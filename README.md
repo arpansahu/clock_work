@@ -2804,6 +2804,7 @@ pipeline {
         FLOWER_PORT = "8051"
         PROJECT_NAME_WITH_DASH = "clock-work"
         SERVER_NAME= "clock-work.arpansahu.me"
+        FLOWER_SERVER_NAME = "flower-clock-work.arpansahu.me"
         BUILD_PROJECT_NAME = "clock_work_build"
         JENKINS_DOMAIN = "jenkins.arpansahu.me"
         SENTRY_ORG="arpansahu"
@@ -2855,6 +2856,32 @@ pipeline {
 
                         // Ensure Nginx is aware of the new configuration
                         sh "sudo ln -sf ${NGINX_CONF} /etc/nginx/sites-enabled/"
+                    } else {
+                        echo "Nginx configuration file already exists."
+                    }                    
+                }
+            }
+        }
+        stage('Check & Create Flower Nginx Configuration') {
+            steps {
+                script {
+                    // Check if the Nginx configuration file exists
+                    def configExists = sh(script: "test -f ${NGINX_CONF_FLOWER} && echo 'exists' || echo 'not exists'", returnStdout: true).trim()
+
+                    if (configExists == 'not exists') {
+                        echo "Nginx configuration file does not exist. Creating it now..."
+
+                        // Create or overwrite the NGINX_CONF file with the content of nginx.conf using sudo tee
+                        sh "sudo cat nginx.conf | sudo tee ${NGINX_CONF_FLOWER} > /dev/null"
+
+                        // Replace placeholders in the configuration file
+                        sh "sudo sed -i 's|SERVER_NAME|${FLOWER_SERVER_NAME}|g' ${NGINX_CONF_FLOWER}"
+                        sh "sudo sed -i 's|DOCKER_PORT|${FLOWER_PORT}|g' ${NGINX_CONF_FLOWER}"
+
+                        echo "Nginx configuration file created."
+
+                        // Ensure Nginx is aware of the new configuration
+                        sh "sudo ln -sf ${NGINX_CONF_FLOWER} /etc/nginx/sites-enabled/"
                     } else {
                         echo "Nginx configuration file already exists."
                     }                    
