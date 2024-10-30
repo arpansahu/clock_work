@@ -45,7 +45,7 @@ def send_mail_func(self):
                     ],
                     "Subject": "Hi! Celery Testing",
                     "TextPart": "You have received this email as a test message from CLOCK WORK Reminder & Notes",
-                    "HTMLPart": f"<h3>Dear {user.email}, welcome to <a href='https://www.arpansahu.me/'>Clock Works</a>!</h3><br />May the delivery force be with you!<br>Message: You have received this email as a test message from CLOCK WORK Reminder & Notes",
+                    "HTMLPart": f"<h3>Dear {user.email}, welcome to <a href='https://arpansahu.me/'>Clock Works</a>!</h3><br />May the delivery force be with you!<br>Message: You have received this email as a test message from CLOCK WORK Reminder & Notes",
                     "CustomID": f"{user.email}"
                 }
             ]
@@ -83,7 +83,7 @@ def send_mail_task(self, emails, headline, content):
                     ],
                     "Subject": headline,
                     "TextPart": content,
-                    "HTMLPart": f"<h3>Dear {emails[email_no]}, welcome to <a href='https://www.arpansahu.me/'>Clock Works</a>!</h3><br />May the delivery force be with you!<br>Message: {content}",
+                    "HTMLPart": f"<h3>Dear {emails[email_no]}, welcome to <a href='https://arpansahu.me/'>Clock Works</a>!</h3><br />May the delivery force be with you!<br>Message: {content}",
                     "CustomID": f"{emails[email_no]}"
                 }
             ]
@@ -123,7 +123,7 @@ def send_mail_task_with_schedule(self, emails, headline, content):
                     ],
                     "Subject": headline,
                     "TextPart": content,
-                    "HTMLPart": f"<h3>Dear {emails[email_no]}, welcome to <a href='https://www.arpansahu.me/'>Clock Works</a>!</h3><br />May the delivery force be with you!<br>Message: {content}",
+                    "HTMLPart": f"<h3>Dear {emails[email_no]}, welcome to <a href='https://arpansahu.me/'>Clock Works</a>!</h3><br />May the delivery force be with you!<br>Message: {content}",
                     "CustomID": f"{emails[email_no]}"
                 }
             ]
@@ -178,7 +178,7 @@ def web_socket_send_mail_task(self, emails, headline, content):
                     ],
                     "Subject": headline,
                     "TextPart": content,
-                    "HTMLPart": f"<h3>Dear {emails[email_no]}, welcome to <a href='https://www.arpansahu.me/'>Clock Works</a>!</h3><br />May the delivery force be with you!<br>Message: {content}",
+                    "HTMLPart": f"<h3>Dear {emails[email_no]}, welcome to <a href='https://arpansahu.me/'>Clock Works</a>!</h3><br />May the delivery force be with you!<br>Message: {content}",
                     "CustomID": f"{emails[email_no]}"
                 }
             ]
