@@ -15,9 +15,10 @@ RUN apt-get update && apt-get install -y supervisor
 COPY . .
 
 # Copy supervisord configuration file
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Expose necessary ports
 EXPOSE 8012 8051
 
 # Start supervisord to manage the processes
-CMD ["supervisord", "-c", "supervisord.conf"]
+CMD python manage.py migrate --noinput && echo "Running collectstatic..." && python manage.py collectstatic --noinput --verbosity 2 && supervisord -c /etc/supervisor/conf.d/supervisord.conf

@@ -17,14 +17,14 @@ spec:
       imagePullSecrets:
         - name: harbor-registry-secret
       containers:
-        - image: harbor.arpansahu.me/library/clock_work:latest
+        - image: harbor.arpansahu.space/library/clock_work:latest
           name: clock-work
           envFrom:
             - secretRef:
                 name: clock-work-secret
           ports:
             - containerPort: 8012
-              name: uvicorn
+              name: daphne
             - containerPort: 8051
               name: celery-flower
   revisionHistoryLimit: 0

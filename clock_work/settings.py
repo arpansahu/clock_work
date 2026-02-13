@@ -47,6 +47,7 @@ SENTRY_ENVIRONMENT = config('SENTRY_ENVIRONMENT')  # production Or "staging", "d
 SENTRY_DSH_URL = config('SENTRY_DSH_URL')
 
 PROJECT_NAME = 'clock_work'
+USE_S3 = config('USE_S3', default=True, cast=bool)
 # ===============================================================================
 
 
@@ -70,6 +71,7 @@ INSTALLED_APPS = [
     'send_email_app',
     'notifications_app',
     'check_service_health',
+    'storages',  # django-storages for S3/MinIO storage
     # 'django_test_enforcer',  # Disabled due to dependency issues
 ]
 

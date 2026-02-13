@@ -17,12 +17,12 @@ spec:
       imagePullSecrets:
         - name: harbor-registry-secret
       containers:
-        - image: harbor.arpansahu.me/library/clock_work_mac:latest
+        - image: harbor.arpansahu.space/library/clock_work_mac:latest
           name: clock-work-mac
           envFrom:
             - secretRef:
                 name: clock-work-secret
           ports:
             - containerPort: 8012
-              name: uvicorn
+              name: daphne
   revisionHistoryLimit: 0
