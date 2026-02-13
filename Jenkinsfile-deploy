@@ -5,7 +5,7 @@ pipeline {
         choice(name: 'DEPLOY_TYPE', choices: ['kubernetes', 'docker'], description: 'Select deployment type')
     }
     environment {
-        REGISTRY = "harbor.arpansahu.me"
+        REGISTRY = "harbor.arpansahu.space"
         REPOSITORY = "library/clock_work"
         IMAGE_TAG = "latest"  // or use a specific tag if needed
         KUBECONFIG = "${env.WORKSPACE}/kubeconfig"  // Set the KUBECONFIG environment variable
@@ -15,10 +15,10 @@ pipeline {
         DOCKER_PORT = "8012"
         FLOWER_PORT = "8051"
         PROJECT_NAME_WITH_DASH = "clock-work"
-        SERVER_NAME= "clock-work.arpansahu.me"
-        FLOWER_SERVER_NAME = "flower-clock-work.arpansahu.me"
+        SERVER_NAME= "clock-work.arpansahu.space"
+        FLOWER_SERVER_NAME = "flower-clock-work.arpansahu.space"
         BUILD_PROJECT_NAME = "clock_work_build"
-        JENKINS_DOMAIN = "jenkins.arpansahu.me"
+        JENKINS_DOMAIN = "jenkins.arpansahu.space"
         SENTRY_ORG="arpansahu"
         SENTRY_PROJECT="clock_work"
     }
@@ -33,6 +33,17 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+        stage('Setup Environment') {
+            steps {
+                script {
+                    echo "Loading environment variables from Jenkins credentials..."
+                    withCredentials([file(credentialsId: 'clock_work_env', variable: 'ENV_FILE')]) {
+                        sh "cp \$ENV_FILE .env"
+                        echo "✅ Environment file created successfully"
+                    }
+                }
             }
         }
         stage('Setup Kubernetes Config') {
