@@ -1,0 +1,8 @@
+/* Open Sans Font - Offline Version */
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 300 700;
+  font-stretch: 75% 100%;
+  src: url('OpenSans.ttf') format('truetype');
+}

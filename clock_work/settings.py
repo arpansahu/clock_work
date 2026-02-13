@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'send_email_app',
     'notifications_app',
     'check_service_health',
+    # 'django_test_enforcer',  # Disabled due to dependency issues
 ]
 
 MIDDLEWARE = [

@@ -48,7 +48,7 @@ ndg-httpsclient==0.5.1
 packaging==21.3
 prometheus_client==0.20.0
 prompt-toolkit==3.0.29
-psycopg2==2.9.3
+psycopg2-binary==2.9.11
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycparser==2.21
@@ -69,7 +69,7 @@ sqlparse==0.4.2
 tornado==6.4.1
 Twisted==22.4.0
 txaio==22.2.1
-typing_extensions==4.2.0
+typing_extensions==4.12.2
 tzdata==2024.2
 urllib3==1.26.9
 uvicorn==0.30.6
@@ -79,3 +79,5 @@ websockets==13.0
 whitenoise==6.1.0
 wrapt==1.14.1
 zope.interface==5.4.0
+beautifulsoup4==4.14.3
+rich==14.3.2
