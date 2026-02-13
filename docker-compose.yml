@@ -1,15 +1,13 @@
-version: '3'
-
 services:
   web:
     build:  # This section will be used when running locally
       context: .
       dockerfile: Dockerfile
-    image: harbor.arpansahu.me/library/clock_work:latest
+    image: harbor.arpansahu.space/library/clock_work:latest
     env_file: ./.env
     container_name: clock_work
-    volumes:
-      - .:/app
+    # volumes:
+    #   - .:/app  # Only for local development, commented out for production deployment
     ports:
       - "8012:8012"
       - "8051:8051"

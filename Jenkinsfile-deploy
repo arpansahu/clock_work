@@ -1,14 +1,14 @@
 pipeline {
     agent { label 'local' }
     parameters {
-        booleanParam(name: 'DEPLOY', defaultValue: false, description: 'Skip the Check for Changes stage')
+        booleanParam(name: 'DEPLOY', defaultValue: true, description: 'Enable deployment')
         choice(name: 'DEPLOY_TYPE', choices: ['kubernetes', 'docker'], description: 'Select deployment type')
+        string(name: 'IMAGE_TAG', defaultValue: '', description: 'Image tag to deploy (leave empty to auto-detect from build)')
     }
     environment {
         REGISTRY = "harbor.arpansahu.space"
         REPOSITORY = "library/clock_work"
-        IMAGE_TAG = "latest"  // or use a specific tag if needed
-        KUBECONFIG = "${env.WORKSPACE}/kubeconfig"  // Set the KUBECONFIG environment variable
+        KUBECONFIG = "${env.WORKSPACE}/kubeconfig"
         NGINX_CONF = "/etc/nginx/sites-available/clock-work"
         NGINX_CONF_FLOWER = "/etc/nginx/sites-available/flower-clock-work"
         ENV_PROJECT_NAME = "clock_work"
@@ -39,7 +39,7 @@ pipeline {
             steps {
                 script {
                     echo "Loading environment variables from Jenkins credentials..."
-                    withCredentials([file(credentialsId: 'clock_work_env', variable: 'ENV_FILE')]) {
+                    withCredentials([file(credentialsId: 'clock_work_env_file', variable: 'ENV_FILE')]) {
                         sh "cp \$ENV_FILE .env"
                         echo "✅ Environment file created successfully"
                     }
@@ -94,8 +94,8 @@ pipeline {
                     if (configExists == 'not exists') {
                         echo "Nginx configuration file does not exist. Creating it now..."
 
-                        // Create or overwrite the NGINX_CONF file with the content of nginx.conf using sudo tee
-                        sh "sudo cat nginx.conf | sudo tee ${NGINX_CONF_FLOWER} > /dev/null"
+                        // Create or overwrite the NGINX_CONF_FLOWER file with the content of nginx-flower.conf using sudo tee
+                        sh "sudo cat nginx-flower.conf | sudo tee ${NGINX_CONF_FLOWER} > /dev/null"
 
                         // Replace placeholders in the configuration file
                         sh "sudo sed -i 's|SERVER_NAME|${FLOWER_SERVER_NAME}|g' ${NGINX_CONF_FLOWER}"
@@ -108,6 +108,41 @@ pipeline {
                     } else {
                         echo "Nginx configuration file already exists."
                     }                    
+                }
+            }
+        }
+        stage('Setup Flower Basic Auth') {
+            steps {
+                script {
+                    // Check if htpasswd file exists
+                    def htpasswdExists = sh(script: "test -f /etc/nginx/.htpasswd_flower && echo 'exists' || echo 'not exists'", returnStdout: true).trim()
+
+                    if (htpasswdExists == 'not exists') {
+                        echo "Creating htpasswd file for Flower basic auth..."
+                        
+                        // Get credentials from .env file
+                        def flowerUsername = sh(script: "grep FLOWER_ADMIN_USERNAME .env | cut -d '=' -f2", returnStdout: true).trim()
+                        def flowerPassword = sh(script: "grep FLOWER_ADMIN_PASS .env | cut -d '=' -f2", returnStdout: true).trim()
+                        
+                        // Create htpasswd file (htpasswd doesn't need sudo if writing to /tmp first)
+                        sh """
+                            htpasswd -cb /tmp/.htpasswd_flower ${flowerUsername} ${flowerPassword}
+                            sudo mv /tmp/.htpasswd_flower /etc/nginx/.htpasswd_flower
+                            sudo chmod 644 /etc/nginx/.htpasswd_flower
+                        """
+                        
+                        // Add basic auth to flower nginx config
+                        sh """
+                            sudo sed -i '/location \\/ {/a\\        auth_basic "Flower Monitoring";\\n        auth_basic_user_file /etc/nginx/.htpasswd_flower;' ${NGINX_CONF_FLOWER}
+                        """
+                        
+                        // Reload nginx
+                        sh "sudo nginx -t && sudo nginx -s reload"
+                        
+                        echo "✅ Flower basic auth configured successfully"
+                    } else {
+                        echo "Flower htpasswd file already exists."
+                    }
                 }
             }
         }
@@ -125,10 +160,10 @@ pipeline {
                     // Log the API URL for debugging purposes
                     echo "Hitting API URL: ${api_url}"
                     
-                    withCredentials([usernamePassword(credentialsId: 'fc364086-fb8b-4528-bc7f-1ef3f42b71c7', usernameVariable: 'JENKINS_USER', passwordVariable: 'JENKINS_PASS')]) {
+                    withCredentials([usernamePassword(credentialsId: 'jenkins-admin-credentials', usernameVariable: 'JENKINS_USER', passwordVariable: 'JENKINS_TOKEN')]) {
                         // Execute the curl command to retrieve the JSON response
-                        echo "usernameVariable: ${JENKINS_USER}, passwordVariable: ${JENKINS_PASS}"
-                        def buildInfoJson = sh(script: "curl -u ${JENKINS_USER}:${JENKINS_PASS} ${api_url}", returnStdout: true).trim()
+                        // echo "usernameVariable: ${JENKINS_USER}, passwordVariable: ${JENKINS_TOKEN}"
+                        def buildInfoJson = sh(script: "curl -u ${JENKINS_USER}:${JENKINS_TOKEN} ${api_url}", returnStdout: true).trim()
 
                         // Log the raw JSON response for debugging
                         echo "Raw JSON response: ${buildInfoJson}"
@@ -167,17 +202,13 @@ pipeline {
             steps {
                 script {
                     if (params.DEPLOY_TYPE == 'docker') {
-                                                
-                        // Copy the .env file to the workspace
-                        sh "sudo cp /root/projectenvs/${ENV_PROJECT_NAME}/.env ${env.WORKSPACE}/"
-                        
                         // Deploy using Docker Compose
-                        sh 'docker-compose down'
-                        sh 'docker-compose pull'
-                        sh 'docker-compose up -d'
-
-                        // Wait for a few seconds to let the app start
-                        sleep 60
+                        sh 'docker compose down'
+                        sh 'docker rm -f ${ENV_PROJECT_NAME} || true'  // Remove any orphaned container
+                        // Override .env with correct MinIO credentials from server
+                        sh 'cp /tmp/clock_work.env .env || true'
+                        sh 'docker compose pull'
+                        sh 'docker compose up -d'
 
                         // Verify the container is running
                         def containerRunning = sh(script: "docker ps -q -f name=${ENV_PROJECT_NAME}", returnStdout: true).trim()
@@ -185,20 +216,45 @@ pipeline {
                             error "Container ${ENV_PROJECT_NAME} is not running"
                         } else {
                             echo "Container ${ENV_PROJECT_NAME} is running"
-                            // Execute curl and scale down Kubernetes deployment if curl is successful
+                            // Health check with retry mechanism (migrations + collectstatic take time)
                             sh """
-                                # Fetch HTTP status code
-                                HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" -L http://0.0.0.0:${DOCKER_PORT})
-                                echo "HTTP Status: \$HTTP_STATUS"
+                                set +e  # Don't exit on error
+                                MAX_RETRIES=20
+                                RETRY_DELAY=30
+                                ATTEMPT=0
+                                HTTP_STATUS=000
                                 
-                                # Update Nginx configuration if status code is 200 (OK)
-                                if [ "\$HTTP_STATUS" -eq 200 ]; then
+                                echo "⏳ Waiting for Django app to start (migrations + collectstatic running)..."
+                                
+                                while [ \$ATTEMPT -lt \$MAX_RETRIES ]; do
+                                    ATTEMPT=\$((ATTEMPT + 1))
+                                    echo "Health check attempt \$ATTEMPT/\$MAX_RETRIES..."
+                                    HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" -L http://localhost:${DOCKER_PORT} || echo "000")
+                                    echo "HTTP Status: \$HTTP_STATUS"
+                                    
+                                    if [ "\$HTTP_STATUS" = "200" ] || [ "\$HTTP_STATUS" = "302" ]; then
+                                        echo "✅ Service is responding! HTTP Status: \$HTTP_STATUS"
+                                        break
+                                    fi
+                                    
+                                    if [ \$ATTEMPT -lt \$MAX_RETRIES ]; then
+                                        echo "⏳ Service not ready yet. Waiting \${RETRY_DELAY}s before retry..."
+                                        sleep \$RETRY_DELAY
+                                    fi
+                                done
+                                
+                                set -e  # Re-enable exit on error
+                                
+                                # Update Nginx configuration if status code is 200 (OK) or 302 (Redirect)
+                                if [ "\$HTTP_STATUS" = "200" ] || [ "\$HTTP_STATUS" = "302" ]; then
                                     sudo sed -i 's|proxy_pass .*;|proxy_pass http://0.0.0.0:${DOCKER_PORT};|' ${NGINX_CONF}
                                     sudo sed -i 's|proxy_pass .*;|proxy_pass http://0.0.0.0:${FLOWER_PORT};|' ${NGINX_CONF_FLOWER}
                                     sudo nginx -s reload
-                                    echo 'Nginx configuration updated and reloaded successfully.'
+                                    echo '✅ Nginx configuration updated and reloaded successfully.'
                                 else
-                                    echo 'Service not available. Nginx configuration not updated.'
+                                    echo '❌ Service not available after \$MAX_RETRIES attempts. HTTP Status: \$HTTP_STATUS'
+                                    echo 'Check container logs with: docker logs ${ENV_PROJECT_NAME}'
+                                    error 'Docker deployment health check failed'
                                 fi
 
                                 # Scale down Kubernetes deployment if it exists and is running
@@ -212,12 +268,9 @@ pipeline {
                             """
                         }
                     } else if (params.DEPLOY_TYPE == 'kubernetes') {
-                        // Copy the .env file to the workspace
-                        sh "sudo cp /root/projectenvs/${ENV_PROJECT_NAME}/.env ${env.WORKSPACE}/"
-
-                        // Check if the file is copied successfully
+                        // Check if the file exists from Setup Environment stage
                         if (fileExists("${env.WORKSPACE}/.env")) {
-                            echo ".env file copied successfully."
+                            echo ".env file exists from Setup Environment stage."
                             
                             // Verify Kubernetes configuration
                             sh 'kubectl cluster-info'
@@ -228,6 +281,7 @@ pipeline {
                             // Delete existing secret if it exists
                             sh """
                             kubectl delete secret ${PROJECT_NAME_WITH_DASH}-secret || true
+                            kubectl delete secret harbor-registry-secret || true
                             """
 
                             // Delete the existing service and deployment
@@ -237,9 +291,24 @@ pipeline {
                             kubectl delete deployment ${PROJECT_NAME_WITH_DASH}-app || true
                             """
 
-                            // Deploy to Kubernetes
+                            // Create secrets for Django app and Harbor registry
                             sh """
                             kubectl create secret generic ${PROJECT_NAME_WITH_DASH}-secret --from-env-file=${WORKSPACE}/.env
+                            """
+                            
+                            // Create Harbor registry secret for pulling images
+                            withCredentials([usernamePassword(credentialsId: 'harbor-credentials', passwordVariable: 'HARBOR_PASSWORD', usernameVariable: 'HARBOR_USERNAME')]) {
+                                sh """
+                                kubectl create secret docker-registry harbor-registry-secret \
+                                  --docker-server=${REGISTRY} \
+                                  --docker-username=$HARBOR_USERNAME \
+                                  --docker-password=$HARBOR_PASSWORD \
+                                  --docker-email=admin@${REGISTRY}
+                                """
+                            }
+                            
+                            // Deploy to Kubernetes
+                            sh """
                             kubectl apply -f ${WORKSPACE}/service.yaml
                             kubectl apply -f ${WORKSPACE}/deployment.yaml
                             """
@@ -255,6 +324,9 @@ pipeline {
                                 kubectl describe deployment/${PROJECT_NAME_WITH_DASH}-app
                             """
                             
+                            // Note: Database migrations now run automatically in Dockerfile CMD
+                            // This ensures compatibility with both Kubernetes and Docker Compose deployments
+                            
                             // Verify service and get NodePort
                             def nodePort = sh(script: "kubectl get service ${PROJECT_NAME_WITH_DASH}-service -o=jsonpath='{.spec.ports[0].nodePort}'", returnStdout: true).trim()
                             echo "Service NodePort: ${nodePort}"
@@ -266,12 +338,33 @@ pipeline {
                             def clusterIP = sh(script: "kubectl get nodes -o=jsonpath='{.items[0].status.addresses[0].address}'", returnStdout: true).trim()
                             echo "Cluster IP: ${clusterIP}"
 
-                            // Verify if the service is accessible and delete the Docker container if accessible and update nginx configuration
+                            // Verify if the service is accessible with retries (pods may take time to start)
                             sh """
-                                HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" -L http://${clusterIP}:${nodePort})
-                                echo "HTTP Status: \$HTTP_STATUS"
+                                set +e  # Don't exit on error
+                                MAX_RETRIES=20
+                                RETRY_DELAY=30
+                                ATTEMPT=0
+                                HTTP_STATUS=000
                                 
-                                if [ "\$HTTP_STATUS" -eq 200 ]; then
+                                while [ \$ATTEMPT -lt \$MAX_RETRIES ]; do
+                                    ATTEMPT=\$((ATTEMPT + 1))
+                                    echo "Health check attempt \$ATTEMPT/\$MAX_RETRIES..."
+                                    HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" -L http://${clusterIP}:${nodePort} || echo "000")
+                                    echo "HTTP Status: \$HTTP_STATUS"
+                                    
+                                    if [ "\$HTTP_STATUS" = "200" ] || [ "\$HTTP_STATUS" = "302" ]; then
+                                        echo "✅ Service is responding! HTTP Status: \$HTTP_STATUS"
+                                        break
+                                    fi
+                                    
+                                    if [ \$ATTEMPT -lt \$MAX_RETRIES ]; then
+                                        echo "⏳ Service not ready yet. Waiting \${RETRY_DELAY}s before retry..."
+                                        sleep \$RETRY_DELAY
+                                    fi
+                                done
+                                
+                                set -e  # Re-enable exit on error
+                                if [ "\$HTTP_STATUS" = "200" ] || [ "\$HTTP_STATUS" = "302" ]; then
                                     echo "Service is reachable at http://${clusterIP}:${nodePort}"
 
                                     echo "Updating Nginx configuration at ${NGINX_CONF}..."
@@ -328,19 +421,22 @@ pipeline {
             steps {
                 script {
                     echo "Sentry Release ..."
+                    
+                    withCredentials([string(credentialsId: 'sentry-auth-token', variable: 'SENTRY_AUTH_TOKEN')]) {
+                        sh """
+                            # Get the current git commit hash
+                            VERSION=\$(git rev-parse HEAD)
+                            
+                            echo "Creating Sentry release for version: \$VERSION"
 
-                    sh """
-                        # Get the current git commit hash
-                        VERSION=\$(git rev-parse HEAD)
+                            sentry-cli releases -o ${SENTRY_ORG} -p ${SENTRY_PROJECT} new \$VERSION
 
-                        sentry-cli releases -o ${SENTRY_ORG} -p ${SENTRY_PROJECT} new \$VERSION
-
-                        # Associate commits with the release
-                        sentry-cli releases -o ${SENTRY_ORG} -p ${SENTRY_PROJECT} set-commits --auto \$VERSION
-
-                        # Deploy the release (optional step for marking the release as deployed)
-                        sentry-cli releases -o ${SENTRY_ORG} -p ${SENTRY_PROJECT} deploys \$VERSION new -e production
-                    """
+                            # Deploy the release
+                            sentry-cli releases -o ${SENTRY_ORG} -p ${SENTRY_PROJECT} deploys \$VERSION new -e production
+                            
+                            echo "✅ Sentry release created successfully"
+                        """
+                    }
                 }
             }
         }
