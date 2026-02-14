@@ -55,6 +55,7 @@ urlpatterns = [
     path('celery-progress/', include('celery_progress.urls')),
     path('test/notification/', test, name='test_notification'),
     re_path('tasks/', include('tasks.urls')),
+    path('', include('account.urls')),
 
     #sentry test view 
     path('sentry-debug/', trigger_error),
