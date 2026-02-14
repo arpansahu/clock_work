@@ -267,3 +267,76 @@ class ErrorHandlerTest(TestCase):
         self.assertTrue(callable(views.error_400))
         self.assertTrue(callable(views.error_403))
         self.assertTrue(callable(views.error_500))
+
+
+class AccountModelMethodsTest(TestCase):
+    """Test Account model utility methods"""
+    
+    def setUp(self):
+        self.user = Account.objects.create_user(
+            email='test@example.com',
+            username='testuser',
+            password='testpass123'
+        )
+    
+    def test_has_perm_admin(self):
+        """Test has_perm returns True for admin users"""
+        self.user.is_admin = True
+        self.user.save()
+        self.assertTrue(self.user.has_perm('any_permission'))
+    
+    def test_has_perm_non_admin(self):
+        """Test has_perm returns False for non-admin users"""
+        self.user.is_admin = False
+        self.user.save()
+        self.assertFalse(self.user.has_perm('any_permission'))
+    
+    def test_has_module_perms(self):
+        """Test has_module_perms always returns True"""
+        self.assertTrue(self.user.has_module_perms('any_app'))
+    
+    def test_str_representation(self):
+        """Test string representation uses email"""
+        self.assertEqual(str(self.user), 'test@example.com')
+
+
+class AccountManagerTest(TestCase):
+    """Test MyAccountManager methods"""
+    
+    def test_create_user_validation_email(self):
+        """Test create_user validates email"""
+        with self.assertRaises(ValueError) as context:
+            Account.objects.create_user(email='', username='test', password='pass')
+        self.assertIn('email', str(context.exception).lower())
+    
+    def test_create_user_validation_username(self):
+        """Test create_user validates username"""
+        with self.assertRaises(ValueError) as context:
+            Account.objects.create_user(email='test@example.com', username='', password='pass')
+        self.assertIn('username', str(context.exception).lower())
+    
+    def test_create_user_validation_password(self):
+        """Test create_user validates password"""
+        with self.assertRaises(ValueError) as context:
+            Account.objects.create_user(email='test@example.com', username='test', password='')
+        self.assertIn('password', str(context.exception).lower())
+    
+    def test_create_superuser(self):
+        """Test create_superuser creates admin user"""
+        superuser = Account.objects.create_superuser(
+            email='admin@example.com',
+            username='admin',
+            password='adminpass'
+        )
+        self.assertTrue(superuser.is_admin)
+        self.assertTrue(superuser.is_staff)
+        self.assertTrue(superuser.is_superuser)
+    
+    def test_create_user_normalizes_email(self):
+        """Test create_user normalizes email domain"""
+        user = Account.objects.create_user(
+            email='Test@EXAMPLE.COM',
+            username='testuser2',
+            password='pass123'
+        )
+        self.assertEqual(user.email, 'Test@example.com')

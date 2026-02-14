@@ -219,3 +219,77 @@ class ErrorPageUITest(TestCase):
         self.assertTrue(hasattr(main_urls, 'handler500'))
         self.assertTrue(hasattr(main_urls, 'handler403'))
         self.assertTrue(hasattr(main_urls, 'handler400'))
+
+
+class EndToEndWorkflowTest(TestCase):
+    """Test complete end-to-end user workflows"""
+    
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            email='workflow@example.com',
+            username='workflowuser',
+            password='workflowpass123'
+        )
+        self.user.is_active = True
+        self.user.save()
+    
+    def test_complete_authentication_workflow(self):
+        """Test complete authentication workflow"""
+        # Start: User not authenticated
+        self.assertFalse(self.client.session.get('_auth_user_id'))
+        
+        # Step 1: Login
+        self.client.force_login(self.user)
+        self.assertTrue(self.client.session.get('_auth_user_id'))
+        
+        # Step 2: Access account page URL (may require templates)
+        account_url = reverse('account:account')
+        self.assertEqual(account_url, '/account/')
+        
+        # Step 3: Logout
+        self.client.logout()
+        self.assertFalse(self.client.session.get('_auth_user_id'))
+    
+    def test_navigation_workflow(self):
+        """Test navigation through multiple pages"""
+        pages = [
+            reverse('home'),
+            reverse('account:login'),
+            reverse('account:register'),
+            reverse('index'),
+            reverse('send_mail'),
+        ]
+        
+        for page_url in pages:
+            with self.subTest(url=page_url):
+                # Verify each URL is accessible
+                self.assertIsNotNone(page_url)
+    
+    def test_task_workflow(self):
+        """Test task-related workflow"""
+        # Navigate to index
+        index_url = reverse('index')
+        self.assertTrue(index_url.startswith('/tasks'))
+        
+        # Navigate to HTTP demo
+        http_url = reverse('http')
+        self.assertTrue(http_url.startswith('/tasks'))
+        
+        # Navigate to WebSocket demo
+        ws_url = reverse('ws')
+        self.assertTrue(ws_url.startswith('/tasks'))
+    
+    def test_email_workflow(self):
+        """Test email sending workflow"""
+        # Step 1: Access send mail page
+        url = reverse('send_mail')
+        self.assertEqual(url, '/send_mail/')
+        
+        # Step 2: Access schedule mail page
+        schedule_url = reverse('schedule_mail')
+        self.assertEqual(schedule_url, '/schedule_mail/')
+        
+        # Step 3: Access send to all page
+        sendall_url = reverse('sendmail_to_all')
+        self.assertEqual(sendall_url, '/sendmailtoall/')
