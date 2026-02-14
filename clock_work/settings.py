@@ -72,7 +72,7 @@ INSTALLED_APPS = [
     'notifications_app',
     'check_service_health',
     'storages',  # django-storages for S3/MinIO storage
-    # 'django_test_enforcer',  # Disabled due to dependency issues
+    'django_test_enforcer',  # Test coverage enforcement
 ]
 
 MIDDLEWARE = [
@@ -379,6 +379,25 @@ LOGGING = {
             'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
         },
     },
+}
+
+# Django Test Enforcer Configuration
+DJANGO_TEST_ENFORCER = {
+    'enabled': True,
+    'coverage_threshold': 80,
+    'fail_under': False,  # Set to True to fail CI if below threshold
+    'exclude_apps': [
+        'django.contrib.*',
+    ],
+    'exclude_patterns': [
+        'migrations/*',
+        'admin.py',
+    ],
+    'include_class_based_views': True,
+    'include_function_views': True,
+    'include_ui_elements': False,  # Disable UI tests for now
+    'generate_ui_tests': False,
+    'test_output_location': 'app',  # 'app' (default), 'folder', or 'both'
 }
 
 CSRF_TRUSTED_ORIGINS = ['https://clock-work.arpansahu.me', ]

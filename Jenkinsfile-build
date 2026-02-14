@@ -2,9 +2,10 @@ pipeline {
     agent any
     parameters {
         booleanParam(name: 'skip_checks', defaultValue: false, description: 'Skip the Check for Changes stage')
+        booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run tests before building')
     }
     environment {
-        REGISTRY = "harbor.arpansahu.me"
+        REGISTRY = "harbor.arpansahu.space"
         REPOSITORY = "library/clock_work"
         IMAGE_TAG = "${env.BUILD_ID}"
         COMMIT_FILE = "${env.WORKSPACE}/last_commit.txt"
@@ -62,6 +63,26 @@ pipeline {
                         // Save the current commit hash to the file
                         writeFile(file: COMMIT_FILE, text: currentCommit)
                     }
+                }
+            }
+        }
+        stage('Run Tests') {
+            when {
+                allOf {
+                    expression { return BUILD_STATUS != 'NOT_BUILT' }
+                    expression { return params.RUN_TESTS }
+                }
+            }
+            steps {
+                script {
+                    echo "Running tests..."
+                    // Copy .env file to the workspace
+                    sh "sudo cp /root/projectenvs/${ENV_PROJECT_NAME}/.env ${env.WORKSPACE}/"
+                    
+                    // Run Django tests
+                    sh """
+                    python manage.py test --verbosity=2 --failfast
+                    """    
                 }
             }
         }

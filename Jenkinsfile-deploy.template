@@ -1,0 +1,513 @@
+pipeline {
+    agent { label 'local' }
+    parameters {
+        booleanParam(name: 'DEPLOY', defaultValue: true, description: 'Enable deployment')
+        choice(name: 'DEPLOY_TYPE', choices: ['kubernetes', 'docker'], description: 'Select deployment type')
+        string(name: 'IMAGE_TAG', defaultValue: '', description: 'Image tag to deploy (leave empty to auto-detect from build)')
+    }
+    environment {
+        REGISTRY = "harbor.arpansahu.space"
+        REPOSITORY = "library/clock_work"
+        KUBECONFIG = "${env.WORKSPACE}/kubeconfig"
+        NGINX_CONF = "/etc/nginx/sites-available/clock-work"
+        NGINX_CONF_FLOWER = "/etc/nginx/sites-available/flower-clock-work"
+        ENV_PROJECT_NAME = "clock_work"
+        DOCKER_PORT = "8016"
+        FLOWER_PORT = "8054"
+        PROJECT_NAME_WITH_DASH = "clock-work"
+        SERVER_NAME= "clock-work.arpansahu.space"
+        FLOWER_SERVER_NAME = "flower-clock-work.arpansahu.space"
+        BUILD_PROJECT_NAME = "clock_work_build"
+        JENKINS_DOMAIN = "jenkins.arpansahu.space"
+        SENTRY_ORG="arpansahu"
+        SENTRY_PROJECT="clock_work"
+    }
+    stages {
+        stage('Initialize') {
+            steps {
+                script {
+                    echo "Current workspace path is: ${env.WORKSPACE}"
+                }
+            }
+        }
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Setup Environment') {
+            steps {
+                script {
+                    echo "Loading environment variables from Jenkins credentials..."
+                    withCredentials([file(credentialsId: 'clock_work_env_file', variable: 'ENV_FILE')]) {
+                        sh "cp \$ENV_FILE .env"
+                        echo "✅ Environment file created successfully"
+                    }
+                }
+            }
+        }
+        stage('Setup Kubernetes Config') {
+            when {
+                expression { return params.DEPLOY_TYPE == 'kubernetes' }
+            }
+            steps {
+                script {
+                    // Copy the kubeconfig file to the workspace
+                    sh "sudo cp /root/.kube/config ${env.WORKSPACE}/kubeconfig"
+                    // Change permissions of the kubeconfig file
+                    sh "sudo chmod 644 ${env.WORKSPACE}/kubeconfig"
+                }
+            }
+        }
+        stage('Check & Create Nginx Configuration') {
+            steps {
+                script {
+                    // Check if the Nginx configuration file exists
+                    def configExists = sh(script: "test -f ${NGINX_CONF} && echo 'exists' || echo 'not exists'", returnStdout: true).trim()
+
+                    if (configExists == 'not exists') {
+                        echo "Nginx configuration file does not exist. Creating it now..."
+
+                        // Create or overwrite the NGINX_CONF file with the content of nginx.conf using sudo tee
+                        sh "sudo cat nginx.conf | sudo tee ${NGINX_CONF} > /dev/null"
+
+                        // Replace placeholders in the configuration file
+                        sh "sudo sed -i 's|SERVER_NAME|${SERVER_NAME}|g' ${NGINX_CONF}"
+                        sh "sudo sed -i 's|DOCKER_PORT|${DOCKER_PORT}|g' ${NGINX_CONF}"
+
+                        echo "Nginx configuration file created."
+
+                        // Ensure Nginx is aware of the new configuration
+                        sh "sudo ln -sf ${NGINX_CONF} /etc/nginx/sites-enabled/"
+                    } else {
+                        echo "Nginx configuration file already exists."
+                    }                    
+                }
+            }
+        }
+        stage('Check & Create Flower Nginx Configuration') {
+            steps {
+                script {
+                    // Check if the Nginx configuration file exists
+                    def configExists = sh(script: "test -f ${NGINX_CONF_FLOWER} && echo 'exists' || echo 'not exists'", returnStdout: true).trim()
+
+                    if (configExists == 'not exists') {
+                        echo "Nginx configuration file does not exist. Creating it now..."
+
+                        // Create or overwrite the NGINX_CONF_FLOWER file with the content of nginx-flower.conf using sudo tee
+                        sh "sudo cat nginx-flower.conf | sudo tee ${NGINX_CONF_FLOWER} > /dev/null"
+
+                        // Replace placeholders in the configuration file
+                        sh "sudo sed -i 's|SERVER_NAME|${FLOWER_SERVER_NAME}|g' ${NGINX_CONF_FLOWER}"
+                        sh "sudo sed -i 's|DOCKER_PORT|${FLOWER_PORT}|g' ${NGINX_CONF_FLOWER}"
+
+                        echo "Nginx configuration file created."
+
+                        // Ensure Nginx is aware of the new configuration
+                        sh "sudo ln -sf ${NGINX_CONF_FLOWER} /etc/nginx/sites-enabled/"
+                    } else {
+                        echo "Nginx configuration file already exists."
+                    }                    
+                }
+            }
+        }
+        stage('Setup Flower Basic Auth') {
+            steps {
+                script {
+                    // Check if htpasswd file exists
+                    def htpasswdExists = sh(script: "test -f /etc/nginx/.htpasswd_flower && echo 'exists' || echo 'not exists'", returnStdout: true).trim()
+
+                    if (htpasswdExists == 'not exists') {
+                        echo "Creating htpasswd file for Flower basic auth..."
+                        
+                        // Get credentials from .env file
+                        def flowerUsername = sh(script: "grep FLOWER_ADMIN_USERNAME .env | cut -d '=' -f2", returnStdout: true).trim()
+                        def flowerPassword = sh(script: "grep FLOWER_ADMIN_PASS .env | cut -d '=' -f2", returnStdout: true).trim()
+                        
+                        // Create htpasswd file (htpasswd doesn't need sudo if writing to /tmp first)
+                        sh """
+                            htpasswd -cb /tmp/.htpasswd_flower ${flowerUsername} ${flowerPassword}
+                            sudo mv /tmp/.htpasswd_flower /etc/nginx/.htpasswd_flower
+                            sudo chmod 644 /etc/nginx/.htpasswd_flower
+                        """
+                        
+                        // Add basic auth to flower nginx config
+                        sh """
+                            sudo sed -i '/location \\/ {/a\\        auth_basic "Flower Monitoring";\\n        auth_basic_user_file /etc/nginx/.htpasswd_flower;' ${NGINX_CONF_FLOWER}
+                        """
+                        
+                        // Reload nginx
+                        sh "sudo nginx -t && sudo nginx -s reload"
+                        
+                        echo "✅ Flower basic auth configured successfully"
+                    } else {
+                        echo "Flower htpasswd file already exists."
+                    }
+                }
+            }
+        }
+        stage('Retrieve Image Tag from Build Job') {
+            when {
+                expression { params.DEPLOY}
+            }
+            steps {
+                script {
+                    echo "Retrieve image tag from ${BUILD_PROJECT_NAME}"
+
+                    // Construct the API URL for the latest build
+                    def api_url = "https://${JENKINS_DOMAIN}/job/${BUILD_PROJECT_NAME}/lastSuccessfulBuild/api/json"
+
+                    // Log the API URL for debugging purposes
+                    echo "Hitting API URL: ${api_url}"
+                    
+                    withCredentials([usernamePassword(credentialsId: 'jenkins-admin-credentials', usernameVariable: 'JENKINS_USER', passwordVariable: 'JENKINS_TOKEN')]) {
+                        // Execute the curl command to retrieve the JSON response
+                        // echo "usernameVariable: ${JENKINS_USER}, passwordVariable: ${JENKINS_TOKEN}"
+                        def buildInfoJson = sh(script: "curl -u ${JENKINS_USER}:${JENKINS_TOKEN} ${api_url}", returnStdout: true).trim()
+
+                        // Log the raw JSON response for debugging
+                        echo "Raw JSON response: ${buildInfoJson}"
+
+                        def imageTag = sh(script: """
+                            echo '${buildInfoJson}' | grep -oP '"number":\\s*\\K\\d+' | head -n 1
+                        """, returnStdout: true).trim()
+
+                        echo "Retrieved image tag (build number): ${imageTag}"
+
+
+                        // Check if REGISTRY, REPOSITORY, and imageTag are all defined and not empty
+                        if (REGISTRY && REPOSITORY && imageTag) {
+                            if (params.DEPLOY_TYPE == 'kubernetes') {
+                                // Replace the placeholder in the deployment YAML
+                                sh "sed -i 's|:latest|:${imageTag}|g' ${WORKSPACE}/deployment.yaml"
+                            }   
+                            
+                            if (params.DEPLOY_TYPE == 'docker') {
+                                // Ensure the correct image tag is used in the docker-compose.yml
+                                sh """
+                                sed -i 's|image: .*|image: ${REGISTRY}/${REPOSITORY}:${imageTag}|' docker-compose.yml
+                                """
+                            }
+                        } else {
+                            echo "One or more required variables (REGISTRY, REPOSITORY, imageTag) are not defined or empty. Skipping docker-compose.yml update."
+                        }
+                    }
+                }
+            }
+        }
+        stage('Deploy') {
+            when {
+                expression { params.DEPLOY }
+            }
+            steps {
+                script {
+                    if (params.DEPLOY_TYPE == 'docker') {
+                        // Deploy using Docker Compose
+                        sh 'docker compose down'
+                        sh 'docker rm -f ${ENV_PROJECT_NAME} || true'  // Remove any orphaned container
+                        // Override .env with correct MinIO credentials from server
+                        sh 'cp /tmp/clock_work.env .env || true'
+                        sh 'docker compose pull'
+                        sh 'docker compose up -d'
+
+                        // Verify the container is running
+                        def containerRunning = sh(script: "docker ps -q -f name=${ENV_PROJECT_NAME}", returnStdout: true).trim()
+                        if (!containerRunning) {
+                            error "Container ${ENV_PROJECT_NAME} is not running"
+                        } else {
+                            echo "Container ${ENV_PROJECT_NAME} is running"
+                            // Health check with retry mechanism (migrations + collectstatic take time)
+                            sh """
+                                set +e  # Don't exit on error
+                                MAX_RETRIES=20
+                                RETRY_DELAY=30
+                                ATTEMPT=0
+                                HTTP_STATUS=000
+                                
+                                echo "⏳ Waiting for Django app to start (migrations + collectstatic running)..."
+                                
+                                while [ \$ATTEMPT -lt \$MAX_RETRIES ]; do
+                                    ATTEMPT=\$((ATTEMPT + 1))
+                                    echo "Health check attempt \$ATTEMPT/\$MAX_RETRIES..."
+                                    HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" -L http://localhost:${DOCKER_PORT} || echo "000")
+                                    echo "HTTP Status: \$HTTP_STATUS"
+                                    
+                                    if [ "\$HTTP_STATUS" = "200" ] || [ "\$HTTP_STATUS" = "302" ]; then
+                                        echo "✅ Service is responding! HTTP Status: \$HTTP_STATUS"
+                                        break
+                                    fi
+                                    
+                                    if [ \$ATTEMPT -lt \$MAX_RETRIES ]; then
+                                        echo "⏳ Service not ready yet. Waiting \${RETRY_DELAY}s before retry..."
+                                        sleep \$RETRY_DELAY
+                                    fi
+                                done
+                                
+                                set -e  # Re-enable exit on error
+                                
+                                # Update Nginx configuration if status code is 200 (OK) or 302 (Redirect)
+                                if [ "\$HTTP_STATUS" = "200" ] || [ "\$HTTP_STATUS" = "302" ]; then
+                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://0.0.0.0:${DOCKER_PORT};|' ${NGINX_CONF}
+                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://0.0.0.0:${FLOWER_PORT};|' ${NGINX_CONF_FLOWER}
+                                    sudo nginx -s reload
+                                    echo '✅ Nginx configuration updated and reloaded successfully.'
+                                else
+                                    echo '❌ Service not available after \$MAX_RETRIES attempts. HTTP Status: \$HTTP_STATUS'
+                                    echo 'Check container logs with: docker logs ${ENV_PROJECT_NAME}'
+                                    error 'Docker deployment health check failed'
+                                fi
+
+                                # Scale down Kubernetes deployment if it exists and is running
+                                replicas=\$(kubectl get deployment ${PROJECT_NAME_WITH_DASH}-app -o=jsonpath='{.spec.replicas}') || true
+                                if [ "\$replicas" != "" ] && [ \$replicas -gt 0 ]; then
+                                    kubectl scale deployment ${PROJECT_NAME_WITH_DASH}-app --replicas=0
+                                    echo 'Kubernetes deployment scaled down successfully.'
+                                else
+                                    echo 'No running Kubernetes deployment to scale down.'
+                                fi
+                            """
+                        }
+                    } else if (params.DEPLOY_TYPE == 'kubernetes') {
+                        // Check if the file exists from Setup Environment stage
+                        if (fileExists("${env.WORKSPACE}/.env")) {
+                            echo ".env file exists from Setup Environment stage."
+                            
+                            // Verify Kubernetes configuration
+                            sh 'kubectl cluster-info'
+                            
+                            // Print current directory
+                            sh 'pwd'
+                            
+                            // Delete existing secret if it exists
+                            sh """
+                            kubectl delete secret ${PROJECT_NAME_WITH_DASH}-secret || true
+                            kubectl delete secret harbor-registry-secret || true
+                            """
+
+                            // Delete the existing service and deployment
+                            sh """
+                            kubectl delete service ${PROJECT_NAME_WITH_DASH}-service || true
+                            kubectl scale deployment ${PROJECT_NAME_WITH_DASH}-app --replicas=0 || true
+                            kubectl delete deployment ${PROJECT_NAME_WITH_DASH}-app || true
+                            """
+
+                            // Create secrets for Django app and Harbor registry
+                            sh """
+                            kubectl create secret generic ${PROJECT_NAME_WITH_DASH}-secret --from-env-file=${WORKSPACE}/.env
+                            """
+                            
+                            // Create Harbor registry secret for pulling images
+                            withCredentials([usernamePassword(credentialsId: 'harbor-credentials', passwordVariable: 'HARBOR_PASSWORD', usernameVariable: 'HARBOR_USERNAME')]) {
+                                sh """
+                                kubectl create secret docker-registry harbor-registry-secret \
+                                  --docker-server=${REGISTRY} \
+                                  --docker-username=$HARBOR_USERNAME \
+                                  --docker-password=$HARBOR_PASSWORD \
+                                  --docker-email=admin@${REGISTRY}
+                                """
+                            }
+                            
+                            // Deploy to Kubernetes
+                            sh """
+                            kubectl apply -f ${WORKSPACE}/service.yaml
+                            kubectl apply -f ${WORKSPACE}/deployment.yaml
+                            """
+                            
+                            // Wait for a few seconds to let the app start
+                            sleep 60
+
+                            // Check deployment status
+                            // sh """
+                            // kubectl rollout status deployment/${PROJECT_NAME_WITH_DASH}-app
+                            // """
+                            sh """
+                                kubectl describe deployment/${PROJECT_NAME_WITH_DASH}-app
+                            """
+                            
+                            // Note: Database migrations now run automatically in Dockerfile CMD
+                            // This ensures compatibility with both Kubernetes and Docker Compose deployments
+                            
+                            // Verify service and get NodePort
+                            def nodePort = sh(script: "kubectl get service ${PROJECT_NAME_WITH_DASH}-service -o=jsonpath='{.spec.ports[0].nodePort}'", returnStdout: true).trim()
+                            echo "Service NodePort: ${nodePort}"
+
+                            def nodePortFlower = sh(script: "kubectl get service ${PROJECT_NAME_WITH_DASH}-service -o=jsonpath='{.spec.ports[1].nodePort}'", returnStdout: true).trim()
+                            echo "Service NodePortFlower: ${nodePortFlower}"
+
+                            // Get cluster IP address
+                            def clusterIP = sh(script: "kubectl get nodes -o=jsonpath='{.items[0].status.addresses[0].address}'", returnStdout: true).trim()
+                            echo "Cluster IP: ${clusterIP}"
+
+                            // Verify if the service is accessible with retries (pods may take time to start)
+                            sh """
+                                set +e  # Don't exit on error
+                                MAX_RETRIES=20
+                                RETRY_DELAY=30
+                                ATTEMPT=0
+                                HTTP_STATUS=000
+                                
+                                while [ \$ATTEMPT -lt \$MAX_RETRIES ]; do
+                                    ATTEMPT=\$((ATTEMPT + 1))
+                                    echo "Health check attempt \$ATTEMPT/\$MAX_RETRIES..."
+                                    HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" -L http://${clusterIP}:${nodePort} || echo "000")
+                                    echo "HTTP Status: \$HTTP_STATUS"
+                                    
+                                    if [ "\$HTTP_STATUS" = "200" ] || [ "\$HTTP_STATUS" = "302" ]; then
+                                        echo "✅ Service is responding! HTTP Status: \$HTTP_STATUS"
+                                        break
+                                    fi
+                                    
+                                    if [ \$ATTEMPT -lt \$MAX_RETRIES ]; then
+                                        echo "⏳ Service not ready yet. Waiting \${RETRY_DELAY}s before retry..."
+                                        sleep \$RETRY_DELAY
+                                    fi
+                                done
+                                
+                                set -e  # Re-enable exit on error
+                                if [ "\$HTTP_STATUS" = "200" ] || [ "\$HTTP_STATUS" = "302" ]; then
+                                    echo "Service is reachable at http://${clusterIP}:${nodePort}"
+
+                                    echo "Updating Nginx configuration at ${NGINX_CONF}..."
+                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://${clusterIP}:${nodePort};|' ${NGINX_CONF}
+                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://${clusterIP}:${nodePortFlower};|' ${NGINX_CONF_FLOWER}
+                                    
+                                    if [ \$? -ne 0 ]; then
+                                        echo "Failed to update Nginx configuration"
+                                        exit 1
+                                    fi
+                                    
+                                    echo "Reloading Nginx..."
+                                    sudo nginx -s reload
+                                    
+                                    if [ \$? -ne 0 ]; then
+                                        echo "Failed to reload Nginx"
+                                        exit 1
+                                    fi
+                                    
+                                    echo "Nginx reloaded successfully"
+                                    
+                                    DOCKER_CONTAINER=\$(docker ps -q -f name=${ENV_PROJECT_NAME})
+                                    
+                                    if [ "\$DOCKER_CONTAINER" ]; then
+                                        echo "Docker container ${ENV_PROJECT_NAME} is running. Removing it..."
+                                        docker rm -f ${ENV_PROJECT_NAME}
+                                        
+                                        if [ \$? -ne 0 ]; then
+                                            echo "Failed to remove Docker container ${ENV_PROJECT_NAME}"
+                                            exit 1
+                                        fi
+                                        
+                                    else
+                                        echo "Docker container ${ENV_PROJECT_NAME} is not running. Skipping removal"
+                                    fi
+
+                                else
+                                    echo "Service is not reachable at http://${clusterIP}:${nodePort}. HTTP Status: \$HTTP_STATUS"
+                                    exit 1
+                                fi
+                            """
+                        } else {
+                            error ".env file not found in the workspace."
+                        }
+                    }
+                    currentBuild.description = 'DEPLOYMENT_EXECUTED'
+                }
+            }
+        }
+        stage('Sentry release') {
+            when {
+                expression { params.DEPLOY }
+            }
+            steps {
+                script {
+                    echo "Sentry Release ..."
+                    
+                    withCredentials([string(credentialsId: 'sentry-auth-token', variable: 'SENTRY_AUTH_TOKEN')]) {
+                        sh """
+                            # Get the current git commit hash
+                            VERSION=\$(git rev-parse HEAD)
+                            
+                            echo "Creating Sentry release for version: \$VERSION"
+
+                            sentry-cli releases -o ${SENTRY_ORG} -p ${SENTRY_PROJECT} new \$VERSION
+
+                            # Deploy the release
+                            sentry-cli releases -o ${SENTRY_ORG} -p ${SENTRY_PROJECT} deploys \$VERSION new -e production
+                            
+                            echo "✅ Sentry release created successfully"
+                        """
+                    }
+                }
+            }
+        }
+    }
+    post {
+        success {
+            script {
+                if (currentBuild.description == 'DEPLOYMENT_EXECUTED') {
+                    sh """curl -s \
+                    -X POST \
+                    --user $MAIL_JET_API_KEY:$MAIL_JET_API_SECRET \
+                    https://api.mailjet.com/v3.1/send \
+                    -H "Content-Type:application/json" \
+                    -d '{
+                        "Messages":[
+                                {
+                                        "From": {
+                                                "Email": "$MAIL_JET_EMAIL_ADDRESS",
+                                                "Name": "ArpanSahuOne Jenkins Notification"
+                                        },
+                                        "To": [
+                                                {
+                                                        "Email": "$MY_EMAIL_ADDRESS",
+                                                        "Name": "Development Team"
+                                                }
+                                        ],
+                                        "Subject": "Jenkins Build Pipeline your project ${currentBuild.fullDisplayName} Ran Successfully",
+                                        "TextPart": "Hola Development Team, your project ${currentBuild.fullDisplayName} is now deployed",
+                                        "HTMLPart": "<h3>Hola Development Team, your project ${currentBuild.fullDisplayName} is now deployed </h3> <br> <p> Build Url: ${env.BUILD_URL}  </p>"
+                                }
+                        ]
+                    }'"""
+                }
+                // Trigger the common_readme job on success when last commit is not Automatic Update from common_readme
+                def commitMessage = sh(script: "git log -1 --pretty=%B", returnStdout: true).trim()
+                if (!commitMessage.contains("Automatic Update")) {
+                    def expandedProjectUrl = "https://github.com/arpansahu/${ENV_PROJECT_NAME}"
+                    build job: 'common_readme', parameters: [
+                        string(name: 'project_git_url', value: expandedProjectUrl),
+                        string(name: 'environment', value: 'prod')
+                    ], wait: false
+                } else {
+                    echo "Skipping common_readme job trigger due to commit message: ${commitMessage}"
+                }
+            }
+        }
+        failure {
+            sh """curl -s \
+            -X POST \
+            --user $MAIL_JET_API_KEY:$MAIL_JET_API_SECRET \
+            https://api.mailjet.com/v3.1/send \
+            -H "Content-Type:application/json" \
+            -d '{
+                "Messages":[
+                        {
+                                "From": {
+                                        "Email": "$MAIL_JET_EMAIL_ADDRESS",
+                                        "Name": "ArpanSahuOne Jenkins Notification"
+                                },
+                                "To": [
+                                        {
+                                                "Email": "$MY_EMAIL_ADDRESS",
+                                                "Name": "Developer Team"
+                                        }
+                                ],
+                            "Subject": "Jenkins Build Pipeline your project ${currentBuild.fullDisplayName} Ran Failed",
+                            "TextPart": "Hola Development Team, your project ${currentBuild.fullDisplayName} deployment failed",
+                            "HTMLPart": "<h3>Hola Development Team, your project ${currentBuild.fullDisplayName} is not deployed, Build Failed </h3> <br> <p> Build Url: ${env.BUILD_URL}  </p>"
+                        }
+                ]
+            }'"""
+        }
+    }
+}
