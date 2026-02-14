@@ -3,7 +3,7 @@ Additional comprehensive tests for utility functions and helpers
 """
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from clock_work.models import AbstractBaseModel, SoftDeleteManager
+from clock_work.models import AbstractBaseModel, BaseManager
 from django.db import models
 from django.utils import timezone
 
@@ -13,14 +13,14 @@ User = get_user_model()
 class AbstractBaseModelTest(TestCase):
     """Test AbstractBaseModel utility methods"""
     
-    def test_abstract_base_model_has_created_at(self):
-        """Test AbstractBaseModel has created_at field"""
+    def test_abstract_base_model_has_created(self):
+        """Test AbstractBaseModel has created field"""
         # Check that model has the field
-        self.assertTrue(hasattr(AbstractBaseModel, 'created_at'))
+        self.assertTrue(hasattr(AbstractBaseModel, 'created'))
     
-    def test_abstract_base_model_has_updated_at(self):
-        """Test AbstractBaseModel has updated_at field"""
-        self.assertTrue(hasattr(AbstractBaseModel, 'updated_at'))
+    def test_abstract_base_model_has_modified(self):
+        """Test AbstractBaseModel has modified field"""
+        self.assertTrue(hasattr(AbstractBaseModel, 'modified'))
     
     def test_abstract_base_model_has_is_deleted(self):
         """Test AbstractBaseModel has is_deleted field"""
@@ -31,17 +31,16 @@ class AbstractBaseModelTest(TestCase):
         self.assertTrue(hasattr(AbstractBaseModel, 'save'))
 
 
-class SoftDeleteManagerTest(TestCase):
-    """Test SoftDeleteManager utility methods"""
+class BaseManagerTest(TestCase):
+    """Test BaseManager utility methods"""
     
-    def test_soft_delete_manager_has_get_queryset(self):
-        """Test SoftDeleteManager has get_queryset method"""
-        self.assertTrue(hasattr(SoftDeleteManager, 'get_queryset'))
+    def test_base_manager_has_get_queryset(self):
+        """Test BaseManager has get_queryset method"""
+        self.assertTrue(hasattr(BaseManager, 'get_queryset'))
     
-    def test_soft_delete_manager_filters_deleted(self):
-        """Test SoftDeleteManager filters out deleted items"""
-        manager = SoftDeleteManager()
-        self.assertTrue(callable(manager.get_queryset))
+    def test_base_manager_is_model_manager(self):
+        """Test BaseManager extends models.Manager"""
+        self.assertTrue(issubclass(BaseManager, models.Manager))
 
 
 class AccountTokenTest(TestCase):
