@@ -395,8 +395,8 @@ DJANGO_TEST_ENFORCER = {
     ],
     'include_class_based_views': True,
     'include_function_views': True,
-    'include_ui_elements': False,  # Disable UI tests for now
-    'generate_ui_tests': False,
+    'include_ui_elements': True,  # Enable UI element detection
+    'generate_ui_tests': True,  # Enable UI test generation
     'test_output_location': 'app',  # 'app' (default), 'folder', or 'both'
 }
 
