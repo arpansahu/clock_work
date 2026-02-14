@@ -60,3 +60,42 @@ class ClockWorkURLsTest(TestCase):
         """Test send_mail URL resolves correctly"""
         url = reverse('send_mail')
         self.assertEqual(url, '/send_mail/')
+
+
+class ClockWorkTasksTest(TestCase):
+    """Test clock_work tasks"""
+    
+    def test_tasks_module_exists(self):
+        """Test that tasks module exists"""
+        from clock_work import tasks
+        self.assertTrue(hasattr(tasks, 'test_func'))
+    
+    def test_test_func_is_task(self):
+        """Test that test_func is a Celery task"""
+        from clock_work.tasks import test_func
+        self.assertTrue(hasattr(test_func, 'delay'))
+        self.assertTrue(hasattr(test_func, 'apply_async'))
+
+
+class TasksAppTasksTest(TestCase):
+    """Test tasks app Celery tasks"""
+    
+    def test_tasks_module_exists(self):
+        """Test that tasks module exists"""
+        from tasks import tasks
+        self.assertTrue(hasattr(tasks, 'http_task'))
+        self.assertTrue(hasattr(tasks, 'http_error_task'))
+        self.assertTrue(hasattr(tasks, 'ws_task'))
+        self.assertTrue(hasattr(tasks, 'ws_error_task'))
+    
+    def test_http_tasks_are_celery_tasks(self):
+        """Test that HTTP tasks are Celery tasks"""
+        from tasks.tasks import http_task, http_error_task
+        self.assertTrue(hasattr(http_task, 'delay'))
+        self.assertTrue(hasattr(http_error_task, 'delay'))
+    
+    def test_ws_tasks_are_celery_tasks(self):
+        """Test that WebSocket tasks are Celery tasks"""
+        from tasks.tasks import ws_task, ws_error_task
+        self.assertTrue(hasattr(ws_task, 'delay'))
+        self.assertTrue(hasattr(ws_error_task, 'delay'))

@@ -66,3 +66,17 @@ class NotificationURLsTest(TestCase):
         """Test test_notification URL resolves correctly"""
         url = reverse('test_notification')
         self.assertEqual(url, '/test/notification/')
+
+
+class NotificationTasksTest(TestCase):
+    """Test notification tasks"""
+    
+    def test_tasks_module_exists(self):
+        """Test that tasks module exists"""
+        from notifications_app import tasks
+        self.assertTrue(hasattr(tasks, 'broadcast_notification'))
+    
+    def test_broadcast_notification_is_task(self):
+        """Test that broadcast_notification is a Celery task"""
+        from notifications_app.tasks import broadcast_notification
+        self.assertTrue(hasattr(broadcast_notification, 'delay'))

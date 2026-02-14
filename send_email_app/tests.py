@@ -68,3 +68,21 @@ class SendEmailAppURLTest(TestCase):
         """Test sendmail_to_all URL is configured"""
         url = reverse('sendmail_to_all')
         self.assertEqual(url, '/sendmailtoall/')
+
+
+class SendEmailTasksTest(TestCase):
+    """Test send_email_app tasks"""
+    
+    def test_tasks_module_exists(self):
+        """Test that tasks module exists"""
+        from send_email_app import tasks
+        self.assertTrue(hasattr(tasks, 'send_mail_func'))
+        self.assertTrue(hasattr(tasks, 'send_mail_task'))
+        self.assertTrue(hasattr(tasks, 'send_mail_task_with_schedule'))
+        self.assertTrue(hasattr(tasks, 'web_socket_send_mail_task'))
+    
+    def test_tasks_are_celery_tasks(self):
+        """Test that tasks are Celery tasks"""
+        from send_email_app.tasks import send_mail_func, send_mail_task
+        self.assertTrue(hasattr(send_mail_func, 'delay'))
+        self.assertTrue(hasattr(send_mail_task, 'delay'))

@@ -225,3 +225,45 @@ class AccountURLsTest(TestCase):
         """Test account URL resolves correctly"""
         url = reverse('account:account')
         self.assertEqual(url, '/account/')
+
+
+class AccountActivationTest(TestCase):
+    """Test account activation functionality"""
+    
+    def setUp(self):
+        self.user = Account.objects.create_user(
+            email='test@example.com',
+            username='testuser',
+            password='testpass123'
+        )
+        self.user.is_active = False
+        self.user.save()
+    
+    def test_activate_url_exists(self):
+        """Test activate URL pattern exists"""
+        # Test URL pattern is configured
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        url = reverse('account:activate', args=[uid, 'test-token'])
+        self.assertIn('/activate/', url)
+
+
+class ErrorHandlerTest(TestCase):
+    """Test error handler views"""
+    
+    def test_error_handlers_defined(self):
+        """Test that error handler functions are defined"""
+        from account import views
+        self.assertTrue(hasattr(views, 'error_404'))
+        self.assertTrue(hasattr(views, 'error_400'))
+        self.assertTrue(hasattr(views, 'error_403'))
+        self.assertTrue(hasattr(views, 'error_500'))
+    
+    def test_error_handlers_callable(self):
+        """Test that error handlers are callable"""
+        from account import views
+        self.assertTrue(callable(views.error_404))
+        self.assertTrue(callable(views.error_400))
+        self.assertTrue(callable(views.error_403))
+        self.assertTrue(callable(views.error_500))
