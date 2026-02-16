@@ -127,7 +127,7 @@ pipeline {
                         docker run --rm \
                             --env-file .env \
                             ${REPOSITORY}:test-${BUILD_ID} \
-                            python manage.py test --verbosity=2 --failfast
+                            python manage.py test --verbosity=2 --failfast --noinput
                     """
                     
                     // Clean up test image
