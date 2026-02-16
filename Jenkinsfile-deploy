@@ -189,8 +189,9 @@ pipeline {
                         // Log the raw JSON response for debugging
                         echo "Raw JSON response: ${buildInfoJson}"
 
+                        // Extract build number using safer file-based approach to avoid shell escaping issues
                         def imageTag = sh(script: """
-                            echo '${buildInfoJson}' | grep -oP '"number":\\s*\\K\\d+' | head -n 1
+                            curl -s -u ${JENKINS_USER}:${JENKINS_TOKEN} ${api_url} | grep -oP '"number":\\s*\\K\\d+' | head -n 1
                         """, returnStdout: true).trim()
 
                         echo "Retrieved image tag (build number): ${imageTag}"
