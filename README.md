@@ -182,8 +182,18 @@ The most common Redis use cases are session cache, full-page cache, queues, lead
 
 Available at: https://clock-work.arpansahu.space
 
-Flower Panel Available at: https://flower-clock-work.arpansahu.space
-Login credentials required : Private
+### Demo Features
+
+- **Homepage Dashboard:** Real-time clock with task management capabilities
+- **Account Management:** View profile, change password, and manage account settings at `/account/`
+- **Real-Time Features:** WebSocket-powered real-time updates and notifications
+- **Task Management:** Celery-based async task management with progress tracking
+- **Admin Panel:** Django admin interface at `/admin/`
+- **Flower Dashboard:** Celery task monitoring at port 8054
+
+admin login details:--
+email: admin@arpansahu.space
+password: showmecode
 
 ## License
 
@@ -347,7 +357,7 @@ if not DEBUG:
 
     elif BUCKET_TYPE == 'MINIO':
         AWS_S3_REGION_NAME = 'us-east-1'  # MinIO doesn't require this, but boto3 does
-        AWS_S3_ENDPOINT_URL = 'https://minio.arpansahu.space'
+        AWS_S3_ENDPOINT_URL = 'https://minio.arpansahu.spacee'
         AWS_DEFAULT_ACL = 'public-read'
         AWS_S3_OBJECT_PARAMETERS = {
             'CacheControl': 'max-age=86400',
@@ -673,7 +683,7 @@ This project and all related services have evolved through multiple deployment s
 - Limited control over infrastructure
 
 **Phase 2: EC2 + Home Server Hybrid (2022-2023)**
-- EC2 for portfolio (arpansahu.space) with Nginx
+- EC2 for portfolio (arpansahu.spacee) with Nginx
 - Home Server for all other projects
 - Nginx on EC2 forwarded traffic to Home Server
 - Cost-effective but faced reliability challenges
@@ -764,27 +774,72 @@ This documentation supports all three deployment strategies:
 - When you have reliable power and internet
 - Cost-sensitive deployments
 
-### Current Architecture (Home Server)
+### Current Architecture (Home Server - Hybrid Approach)
+
+**Current Setup (February 2026):**
 
 ```
 Internet
    │
-   ├─ arpansahu.space (Home Server with Dynamic DNS)
+   ├─ arpansahu.space (Home Server with Static IP)
    │   │
-   │   └─ Nginx (Port 443) - TLS Termination
+   │   └─ Nginx 1.18.0 (systemd) - TLS Termination & Reverse Proxy
    │        │
-   │        ├─ Jenkins (CI/CD)
-   │        ├─ Portainer (Docker Management)
-   │        ├─ PgAdmin (Database Admin)
-   │        ├─ RabbitMQ (Message Queue)
-   │        ├─ Redis Commander (Cache Admin)
-   │        ├─ MinIO (Object Storage)
+   │        ├─ System Services (systemd) - Core Infrastructure
+   │        │   ├─ PostgreSQL 14.20 - Primary database
+   │        │   ├─ Redis 6.0.16 - Cache and sessions
+   │        │   ├─ RabbitMQ - Message broker for Celery
+   │        │   ├─ Kafka 3.9.0 - Event streaming (KRaft mode)
+   │        │   ├─ MinIO - S3-compatible object storage
+   │        │   ├─ Jenkins 2.541.1 - CI/CD automation
+   │        │   ├─ ElasticSearch - Search and logging
+   │        │   └─ K3s - Kubernetes for app orchestration
    │        │
-   │        └─ Kubernetes (k3s)
-   │             ├─ Django Applications
-   │             ├─ PostgreSQL Databases
-   │             └─ Redis Instances
+   │        ├─ Docker Containers (Management UIs only)
+   │        │   ├─ Portainer - Docker & K3s management
+   │        │   ├─ PgAdmin - PostgreSQL admin interface
+   │        │   ├─ Redis Commander - Redis admin interface
+   │        │   ├─ Harbor - Private Docker registry
+   │        │   ├─ AKHQ - Kafka management UI
+   │        │   ├─ Kibana - ElasticSearch UI
+   │        │   └─ PMM - PostgreSQL monitoring
+   │        │
+   │        └─ K3s Deployments (Django Applications)
+   │             ├─ arpansahu.space
+   │             ├─ borcelle.arpansahu.space
+   │             ├─ chew.arpansahu.space
+   │             └─ django-starter.arpansahu.space
 ```
+
+**Why Hybrid Architecture?**
+
+This evolved architecture uses the best deployment method for each service type:
+
+1. **System Services for Core Infrastructure**
+   - Better performance (no containerization overhead)
+   - Production-grade reliability via systemd
+   - Direct system access and monitoring (journalctl)
+   - Native backup/restore tools
+   - Lower resource usage
+   
+2. **Docker for Management UIs**
+   - Easy updates (docker pull)
+   - Isolated dependencies
+   - Lower priority - can restart without affecting core services
+   - Quick rollback if updates fail
+   
+3. **K3s for Applications**
+   - Container orchestration benefits
+   - Easy scaling and rolling updates
+   - Service discovery
+   - Resource limits and quotas
+   - Health checks and auto-restart
+
+**Performance Impact:**
+- Core services run 10-15% faster vs Docker
+- Better memory utilization (no container overhead for heavy services)
+- Easier to tune PostgreSQL, Redis performance parameters
+- Direct disk I/O for databases and object storage
 
 ### Home Server Improvements (2026)
 
@@ -938,7 +993,7 @@ As of January 2026, I'm running a home server setup with:
 - All services accessible via arpansahu.space
 - Automated backups to cloud storage
 
-Live projects: https://arpansahu.space/projects
+Live projects: https://arpansahu.spacee/projects
 
 ### Next Steps
 
@@ -2276,32 +2331,35 @@ RUN apt-get update && apt-get install -y supervisor
 COPY . .
 
 # Copy supervisord configuration file
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Expose necessary ports
 EXPOSE 8012 8051
 
 # Start supervisord to manage the processes
-CMD ["supervisord", "-c", "supervisord.conf"]
+# Use sh -c with set -e to fail fast on any error, exec supervisord to replace shell process
+CMD sh -c "set -e && \
+    python manage.py migrate --noinput && \
+    python manage.py collectstatic --noinput --verbosity 2 && \
+    exec supervisord -c /etc/supervisor/conf.d/supervisord.conf"
 ```
 
 Create a file named docker-compose.yml and add following lines in it
 
 ```bash
-version: '3'
-
 services:
   web:
     build:  # This section will be used when running locally
       context: .
       dockerfile: Dockerfile
-    image: harbor.arpansahu.space/library/clock_work:latest
+    image: ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
     env_file: ./.env
-    container_name: clock_work
-    volumes:
-      - .:/app
+    container_name: ${ENV_PROJECT_NAME}
+    # volumes:
+    #   - .:/app  # Only for local development, commented out for production deployment
     ports:
-      - "8012:8012"
-      - "8051:8051"
+      - "${DOCKER_PORT}:${DOCKER_PORT}"
+      - "${FLOWER_PORT}:${FLOWER_PORT}"
     restart: unless-stopped
 ```
 
@@ -10341,7 +10399,7 @@ pipeline {
 
 Note: agent {label 'local'} is used to specify which node will execute the jenkins job deployment. So local linux server is labelled with 'local' are the project with this label will be executed in local machine node.
 
-* Configure a Jenkins project from jenkins ui located at https://jenkins.arpansahu.space
+* Configure a Jenkins project from jenkins ui located at https://jenkins.arpansahu.me
 
 Make sure to use Pipeline project and name it whatever you want I have named it as per great_chat
 
@@ -10410,40 +10468,113 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 To run this project, you will need to add the following environment variables to your .env file
 
+# ============================================
+# Docker Registry Configuration
+# ============================================
+DOCKER_REGISTRY=harbor.arpansahu.space
+DOCKER_REPOSITORY=library
+DOCKER_IMAGE_NAME=clock_work
+DOCKER_IMAGE_TAG=latest
+
+# ============================================
+# Deployment Configuration
+# ============================================
+ENV_PROJECT_NAME=clock_work
+SERVER_NAME=clock-work.arpansahu.space
+DOCKER_PORT=8012
+FLOWER_PORT=8051
+FLOWER_SERVER_NAME=flower-clock-work.arpansahu.space
+JENKINS_DOMAIN=jenkins.arpansahu.space
+
+# ============================================
+# Django Configuration
+# ============================================
 SECRET_KEY=
 
 DEBUG=
 
+# Set to True to use S3/MinIO for static files, False for local storage
+USE_S3=
+
+# ALLOWED_HOSTS supports:
+# - Domain names: your-domain.com
+# - Wildcards: .your-domain.com (all subdomains)
+# - IP addresses: 127.0.0.1, 192.168.1.x
+# - CIDR subnets: 10.42.0.0/16 (Kubernetes pod network)
 ALLOWED_HOSTS=
 
+DOMAIN= 
+
+PROTOCOL=
+
+# ============================================
+# Database Configuration
+# ============================================
+DATABASE_URL=
+
+# ============================================
+# Redis Configuration
+# ============================================
+REDIS_CLOUD_URL=
+
+# ============================================
+# Email Configuration (Mailjet)
+# ============================================
+# For better email deliverability:
+# 1. Use verified domain in Mailjet sender settings
+# 2. Configure SPF, DKIM, and DMARC records in your DNS
+# 3. Use professional HTML templates (see templates/emails/)
+# ============================================
 MAIL_JET_API_KEY=
 
 MAIL_JET_API_SECRET=
 
+# Verified sender email (must be verified in Mailjet)
+MAIL_JET_EMAIL_ADDRESS=
+
+MY_EMAIL_ADDRESS=
+
+# ============================================
+# Object Storage (AWS S3/MinIO/Blackblaze)
+# Using MinIO for object storage through nginx proxy
+# API Endpoint: minioapi.arpansahu.space (nginx proxy to MinIO API)
+# Console UI: minio.arpansahu.space (MinIO web console)
+# For AWS S3: Set BUCKET_TYPE=AWS and use AWS endpoint
+# ============================================
 AWS_ACCESS_KEY_ID=
 
 AWS_SECRET_ACCESS_KEY=
 
 AWS_STORAGE_BUCKET_NAME=
 
+# Options: MINIO, AWS, BLACKBLAZE
 BUCKET_TYPE=
 
-DATABASE_URL=
-
-REDIS_CLOUD_URL=
-
-DOMAIN= 
-
-PROTOCOL=
-
-# SENTRY
+# ============================================
+# Error Tracking (Sentry)
+# ============================================
 SENTRY_ENVIRONMENT=
 
 SENTRY_DSH_URL=
 
-# deploy_kube.sh requirements
-HARBOR_USERNAME=
+SENTRY_ORG=arpansahu
 
+SENTRY_PROJECT=clock_work
+
+SENTRY_AUTH_TOKEN=
+
+# ============================================
+# Flower (Celery monitoring)
+# ============================================
+FLOWER_ADMIN_USERNAME=
+
+FLOWER_ADMIN_PASS=
+
+# ============================================
+# Harbor Registry Credentials
+# ============================================
+HARBOR_URL=https://harbor.arpansahu.space
+HARBOR_USERNAME=
 HARBOR_PASSWORD=
 
 
