@@ -7,6 +7,7 @@ pipeline {
     }
     environment {
         KUBECONFIG = "${env.WORKSPACE}/kubeconfig"
+        IMAGE_TAG = "${params.IMAGE_TAG ?: 'latest'}"
     }
     stages {
         stage('Initialize') {
@@ -61,7 +62,7 @@ pipeline {
                         echo "Computed PROJECT_NAME_WITH_DASH: ${env.PROJECT_NAME_WITH_DASH}"
                         echo "Computed NGINX_CONF: ${env.NGINX_CONF}"
                         echo "Computed NGINX_CONF_FLOWER: ${env.NGINX_CONF_FLOWER}"
-                        echo "Docker Image: ${env.REGISTRY}/${env.REPOSITORY}:${IMAGE_TAG}"
+                        echo "Docker Image: ${env.REGISTRY}/${env.REPOSITORY}:${env.IMAGE_TAG}"
                     }
                 }
             }
@@ -83,22 +84,22 @@ pipeline {
             steps {
                 script {
                     // Check if the Nginx configuration file exists
-                    def configExists = sh(script: "test -f ${NGINX_CONF} && echo 'exists' || echo 'not exists'", returnStdout: true).trim()
+                    def configExists = sh(script: "test -f ${env.NGINX_CONF} && echo 'exists' || echo 'not exists'", returnStdout: true).trim()
 
                     if (configExists == 'not exists') {
                         echo "Nginx configuration file does not exist. Creating it now..."
 
                         // Create or overwrite the NGINX_CONF file with the content of nginx.conf using sudo tee
-                        sh "sudo cat nginx.conf | sudo tee ${NGINX_CONF} > /dev/null"
+                        sh "sudo cat nginx.conf | sudo tee ${env.NGINX_CONF} > /dev/null"
 
                         // Replace placeholders in the configuration file
-                        sh "sudo sed -i 's|SERVER_NAME|${SERVER_NAME}|g' ${NGINX_CONF}"
-                        sh "sudo sed -i 's|DOCKER_PORT|${DOCKER_PORT}|g' ${NGINX_CONF}"
+                        sh "sudo sed -i 's|SERVER_NAME|${env.SERVER_NAME}|g' ${env.NGINX_CONF}"
+                        sh "sudo sed -i 's|DOCKER_PORT|${env.DOCKER_PORT}|g' ${env.NGINX_CONF}"
 
                         echo "Nginx configuration file created."
 
                         // Ensure Nginx is aware of the new configuration
-                        sh "sudo ln -sf ${NGINX_CONF} /etc/nginx/sites-enabled/"
+                        sh "sudo ln -sf ${env.NGINX_CONF} /etc/nginx/sites-enabled/"
                     } else {
                         echo "Nginx configuration file already exists."
                     }                    
@@ -109,22 +110,22 @@ pipeline {
             steps {
                 script {
                     // Check if the Nginx configuration file exists
-                    def configExists = sh(script: "test -f ${NGINX_CONF_FLOWER} && echo 'exists' || echo 'not exists'", returnStdout: true).trim()
+                    def configExists = sh(script: "test -f ${env.NGINX_CONF_FLOWER} && echo 'exists' || echo 'not exists'", returnStdout: true).trim()
 
                     if (configExists == 'not exists') {
                         echo "Nginx configuration file does not exist. Creating it now..."
 
                         // Create or overwrite the NGINX_CONF_FLOWER file with the content of nginx-flower.conf using sudo tee
-                        sh "sudo cat nginx-flower.conf | sudo tee ${NGINX_CONF_FLOWER} > /dev/null"
+                        sh "sudo cat nginx-flower.conf | sudo tee ${env.NGINX_CONF_FLOWER} > /dev/null"
 
                         // Replace placeholders in the configuration file
-                        sh "sudo sed -i 's|SERVER_NAME|${FLOWER_SERVER_NAME}|g' ${NGINX_CONF_FLOWER}"
-                        sh "sudo sed -i 's|DOCKER_PORT|${FLOWER_PORT}|g' ${NGINX_CONF_FLOWER}"
+                        sh "sudo sed -i 's|SERVER_NAME|${env.FLOWER_SERVER_NAME}|g' ${env.NGINX_CONF_FLOWER}"
+                        sh "sudo sed -i 's|DOCKER_PORT|${env.FLOWER_PORT}|g' ${env.NGINX_CONF_FLOWER}"
 
                         echo "Nginx configuration file created."
 
                         // Ensure Nginx is aware of the new configuration
-                        sh "sudo ln -sf ${NGINX_CONF_FLOWER} /etc/nginx/sites-enabled/"
+                        sh "sudo ln -sf ${env.NGINX_CONF_FLOWER} /etc/nginx/sites-enabled/"
                     } else {
                         echo "Nginx configuration file already exists."
                     }                    
@@ -153,7 +154,7 @@ pipeline {
                         
                         // Add basic auth to flower nginx config
                         sh """
-                            sudo sed -i '/location \\/ {/a\\        auth_basic "Flower Monitoring";\\n        auth_basic_user_file /etc/nginx/.htpasswd_flower;' ${NGINX_CONF_FLOWER}
+                            sudo sed -i '/location \\/ {/a\\        auth_basic "Flower Monitoring";\\n        auth_basic_user_file /etc/nginx/.htpasswd_flower;' ${env.NGINX_CONF_FLOWER}
                         """
                         
                         // Reload nginx
@@ -172,10 +173,10 @@ pipeline {
             }
             steps {
                 script {
-                    echo "Retrieve image tag from ${BUILD_PROJECT_NAME}"
+                    echo "Retrieve image tag from ${env.BUILD_PROJECT_NAME}"
 
                     // Construct the API URL for the latest build
-                    def api_url = "https://${JENKINS_DOMAIN}/job/${BUILD_PROJECT_NAME}/lastSuccessfulBuild/api/json"
+                    def api_url = "https://${env.JENKINS_DOMAIN}/job/${env.BUILD_PROJECT_NAME}/lastSuccessfulBuild/api/json"
 
                     // Log the API URL for debugging purposes
                     echo "Hitting API URL: ${api_url}"
@@ -196,16 +197,19 @@ pipeline {
 
 
                         // Check if REPOSITORY and imageTag are all defined and not empty
-                        if (REPOSITORY && imageTag) {
+                        if (env.REPOSITORY && imageTag) {
+                            // Update IMAGE_TAG environment variable
+                            env.IMAGE_TAG = imageTag
+                            
                             if (params.DEPLOY_TYPE == 'kubernetes') {
                                 // Replace the placeholder in the deployment YAML
-                                sh "sed -i 's|:latest|:${imageTag}|g' ${WORKSPACE}/deployment.yaml"
+                                sh "sed -i 's|:latest|:${imageTag}|g' ${env.WORKSPACE}/deployment.yaml"
                             }   
                             
                             if (params.DEPLOY_TYPE == 'docker') {
                                 // Ensure the correct image tag is used in the docker-compose.yml
                                 sh """
-                                sed -i 's|image: .*clock_work.*|image: ${REGISTRY}/${REPOSITORY}:${imageTag}|' docker-compose.yml
+                                sed -i 's|image: .*clock_work.*|image: ${env.REGISTRY}/${env.REPOSITORY}:${imageTag}|' docker-compose.yml
                                 """
                             }
                         } else {
@@ -268,7 +272,7 @@ pipeline {
                                 # Update Nginx configuration if status code is 200 (OK) or 302 (Redirect)
                                 if [ "\$HTTP_STATUS" = "200" ] || [ "\$HTTP_STATUS" = "302" ]; then
                                     sudo sed -i 's|proxy_pass .*;|proxy_pass http://0.0.0.0:${DOCKER_PORT};|' ${NGINX_CONF}
-                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://0.0.0.0:${FLOWER_PORT};|' ${NGINX_CONF_FLOWER}
+                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://0.0.0.0:${env.FLOWER_PORT};|' ${env.NGINX_CONF_FLOWER}
                                     sudo nginx -s reload
                                     echo '✅ Nginx configuration updated and reloaded successfully.'
                                 else
@@ -313,7 +317,7 @@ pipeline {
 
                             // Create secrets for Django app and Harbor registry
                             sh """
-                            kubectl create secret generic ${PROJECT_NAME_WITH_DASH}-secret --from-env-file=${WORKSPACE}/.env
+                            kubectl create secret generic ${env.PROJECT_NAME_WITH_DASH}-secret --from-env-file=${env.WORKSPACE}/.env
                             """
                             
                             // Create Harbor registry secret for pulling images
@@ -329,8 +333,8 @@ pipeline {
                             
                             // Deploy to Kubernetes
                             sh """
-                            kubectl apply -f ${WORKSPACE}/service.yaml
-                            kubectl apply -f ${WORKSPACE}/deployment.yaml
+                            kubectl apply -f ${env.WORKSPACE}/service.yaml
+                            kubectl apply -f ${env.WORKSPACE}/deployment.yaml
                             """
                             
                             // Wait for a few seconds to let the app start
@@ -389,7 +393,7 @@ pipeline {
 
                                     echo "Updating Nginx configuration at ${NGINX_CONF}..."
                                     sudo sed -i 's|proxy_pass .*;|proxy_pass http://${clusterIP}:${nodePort};|' ${NGINX_CONF}
-                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://${clusterIP}:${nodePortFlower};|' ${NGINX_CONF_FLOWER}
+                                    sudo sed -i 's|proxy_pass .*;|proxy_pass http://${clusterIP}:${nodePortFlower};|' ${env.NGINX_CONF_FLOWER}
                                     
                                     if [ \$? -ne 0 ]; then
                                         echo "Failed to update Nginx configuration"
