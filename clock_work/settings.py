@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 
 import os
 import subprocess
+import ipaddress
 from decouple import config
 
 import sentry_sdk
@@ -22,13 +23,53 @@ from django.db.models.signals import pre_init
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Custom ALLOWED_HOSTS class to support Kubernetes pod network subnet validation
+class AllowedHostsWithSubnet(list):
+    """
+    Custom ALLOWED_HOSTS that supports CIDR subnet notation for Kubernetes pod networks.
+    Example: Add '10.42.0.0/16' to allow all pod IPs in the 10.42.x.x range.
+    """
+    def __init__(self, hosts):
+        self.hosts = []
+        self.networks = []
+        for host in hosts:
+            if '/' in host:  # CIDR notation
+                try:
+                    self.networks.append(ipaddress.ip_network(host, strict=False))
+                except ValueError:
+                    pass  # Invalid CIDR, skip it
+            else:
+                self.hosts.append(host)
+        super().__init__(self.hosts)
+    
+    def __contains__(self, key):
+        # First check standard hosts (domains, IPs, wildcards)
+        if super().__contains__(key):
+            return True
+        
+        # Extract just the hostname/IP if port is included
+        if ':' in key:
+            key = key.split(':')[0]
+        
+        # Check if it's an IP address in any of our allowed networks
+        try:
+            ip = ipaddress.ip_address(key)
+            for network in self.networks:
+                if ip in network:
+                    return True
+        except ValueError:
+            pass  # Not a valid IP, continue with standard checking
+        
+        return False
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 # ============================ENV VARIABLES=====================================
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(' ')
+# Use custom class to support Kubernetes pod network subnets (10.42.0.0/16)
+ALLOWED_HOSTS = AllowedHostsWithSubnet(config('ALLOWED_HOSTS').split(' '))
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
