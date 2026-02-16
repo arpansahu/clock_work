@@ -17,6 +17,7 @@ from django.contrib import admin
 from django.urls import path, re_path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import RedirectView
 import time
 from .views import (
     CeleryTest,
@@ -45,7 +46,8 @@ def large_resource(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    re_path(r'^celery-progress/', include('celery_progress.urls')),
+    # Favicon at root
+    path('favicon.ico', RedirectView.as_view(url=settings.STATIC_URL + 'favicon.ico', permanent=True)),
     path('', Home.as_view(), name='home'),
     path('test', CeleryTest.as_view(), name="test"),
     path('sendmailtoall/', CelerySendMailToAll.as_view(), name="sendmail_to_all"),

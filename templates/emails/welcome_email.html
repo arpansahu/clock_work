@@ -1,0 +1,40 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Welcome to Clock Work!{% endblock %}
+
+{% block header_title %}Welcome to Clock Work!{% endblock %}
+{% block header_subtitle %}Let's get you started with reminders and notes{% endblock %}
+
+{% block content %}
+<h2>Welcome aboard, {{ user_email|default:"friend" }}! 🎉</h2>
+
+<p>
+    Thank you for joining Clock Work! We're excited to help you manage your reminders and notes 
+    efficiently with our powerful tools.
+</p>
+
+<div class="content-box">
+    <h3 style="margin-top: 0; color: #667eea;">What you can do with Clock Work:</h3>
+    <ul style="margin: 10px 0; padding-left: 20px; color: #666666;">
+        <li>Create and manage reminders</li>
+        <li>Organize your notes efficiently</li>
+        <li>Get timely notifications</li>
+        <li>Access your data from anywhere</li>
+    </ul>
+</div>
+
+<div style="text-align: center;">
+    <a href="https://clock-work.arpansahu.space" class="button">Get Started</a>
+</div>
+
+<p style="margin-top: 30px;">
+    Need help getting started? Check out our <a href="https://clock-work.arpansahu.space">documentation</a> 
+    or reach out to our support team.
+</p>
+
+<p style="margin-top: 30px;">
+    Best regards,<br>
+    <strong>The Clock Work Team</strong><br>
+    <a href="https://arpansahu.space">Arpan Sahu</a>
+</p>
+{% endblock %}

@@ -2,24 +2,33 @@
 
 # Load environment variables from .env file
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+    export $(cat .env | grep -v '^#' | grep -v '^$' | xargs)
 else
-    echo ".env file not found!"
+    echo "Error: .env file not found!"
     exit 1
 fi
 
-# Check if required environment variables are set
+# Validate required environment variables
 if [ -z "$HARBOR_USERNAME" ] || [ -z "$HARBOR_PASSWORD" ]; then
-    echo "HARBOR_USERNAME or HARBOR_PASSWORD is not set in the .env file"
+    echo "Error: HARBOR_USERNAME or HARBOR_PASSWORD is not set in the .env file"
     exit 1
 fi
+
+if [ -z "$DOCKER_REGISTRY" ] || [ -z "$DOCKER_REPOSITORY" ] || \
+   [ -z "$DOCKER_IMAGE_NAME" ] || [ -z "$DOCKER_IMAGE_TAG" ]; then
+    echo "Error: Missing required Docker registry variables in .env file"
+    exit 1
+fi
+
+# Compute derived variables
+HARBOR_URL="${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}"
+LOCAL_IMAGE="${DOCKER_IMAGE_NAME}"
+TAG="${DOCKER_IMAGE_TAG}"
+PROJECT_NAME_WITH_DASH=$(echo "${ENV_PROJECT_NAME}" | tr '_' '-')
 
 # Default Variables
-HARBOR_URL="harbor.arpansahu.me/library"
-LOCAL_IMAGE="clock_work"
-TAG="latest"
 NAMESPACE="default"
-SECRET_NAME="clock-work-secret"
+SECRET_NAME="${PROJECT_NAME_WITH_DASH}-secret"
 ENV_FILE=".env"
 SERVICE_FILE="service.yaml"
 
@@ -80,15 +89,15 @@ function verify_rollout {
 
 # Function to set default specific variables
 function set_default_variables {
-    IMAGE_NAME="clock_work"
-    KUBE_DEPLOYMENT="clock-work-app"
+    IMAGE_NAME="${DOCKER_IMAGE_NAME}"
+    KUBE_DEPLOYMENT="${PROJECT_NAME_WITH_DASH}-app"
     DEPLOYMENT_FILE="deployment.yaml"
 }
 
 # Function to set mac specific variables
 function set_mac_variables {
-    IMAGE_NAME="clock_work_mac"
-    KUBE_DEPLOYMENT="clock-work-mac-app"
+    IMAGE_NAME="${DOCKER_IMAGE_NAME}_mac"
+    KUBE_DEPLOYMENT="${PROJECT_NAME_WITH_DASH}-mac-app"
     DEPLOYMENT_FILE="deployment-mac.yaml"
 }
 

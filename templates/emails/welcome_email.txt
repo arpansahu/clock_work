@@ -1,0 +1,30 @@
+Welcome to Clock Work!
+
+Hello {{ user_email|default:"friend" }}!
+
+Thank you for joining Clock Work! We're excited to help you manage your reminders and notes efficiently with our powerful tools.
+
+What you can do with Clock Work:
+• Create and manage reminders
+• Organize your notes efficiently
+• Get timely notifications
+• Access your data from anywhere
+
+Get Started: https://clock-work.arpansahu.space
+
+Need help getting started? Check out our documentation or reach out to our support team.
+
+Best regards,
+The Clock Work Team
+Arpan Sahu - https://arpansahu.space
+
+---
+© {{ current_year }} Clock Work by Arpan Sahu
+
+GitHub: https://github.com/arpansahu
+LinkedIn: https://linkedin.com/in/arpansahu
+Portfolio: https://arpansahu.space
+
+Unsubscribe: #
+Contact: admin@arpansahu.space
+Visit Website: https://clock-work.arpansahu.space

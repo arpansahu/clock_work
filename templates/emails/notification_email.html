@@ -1,0 +1,27 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}{{ subject }} - Clock Work{% endblock %}
+
+{% block header_title %}{{ headline|default:"Clock Work Notification" }}{% endblock %}
+
+{% block content %}
+<h2>Hello {{ user_email|default:"there" }}!</h2>
+
+<p>{{ content|safe }}</p>
+
+{% if action_url %}
+<div style="text-align: center;">
+    <a href="{{ action_url }}" class="button">{{ action_text|default:"View Details" }}</a>
+</div>
+{% endif %}
+
+<p>
+    If you have any questions or need assistance, feel free to reach out to us.
+</p>
+
+<p style="margin-top: 30px;">
+    Best regards,<br>
+    <strong>Clock Work Team</strong><br>
+    <a href="https://clock-work.arpansahu.space">clock-work.arpansahu.space</a>
+</p>
+{% endblock %}

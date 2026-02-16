@@ -54,7 +54,15 @@ tmtagsHistory
 /.vscode/settings.json
 
 /.vscode/settings.json
+
+# Environment files
+# Note: .env contains secrets and should never be committed
+# For local dev: Copy env.example to .env and set DEBUG=1
+# For production: Set DEBUG=0 and use production values
 .env
+.env.local
+.env.*.local
+
 socialauth
 
 **/migrations/**
@@ -64,3 +72,20 @@ venv
 new_env
 supervisord.pid
 supervisord.log
+
+# Documentation files (auto-generated, not for git)
+CDN_TO_LOCAL_MIGRATION.md
+LOCAL_DEVELOPMENT.md
+MODERNIZATION_PLAN.md
+JENKINS_ENV_CENTRALIZATION_GUIDE.md
+PROJECT_REFACTORING_SUMMARY.md
+DOCKER_LOCAL_TEST.md
+EMAIL_SYSTEM.md
+*_GUIDE.md
+*_PLAN.md
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo

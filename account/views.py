@@ -77,7 +77,7 @@ def send_mail_account_activate(reciever_email, user, SUBJECT="Confirm Your Email
         'Messages': [
             {
                 "From": {
-                    "Email": "admin@arpansahu.me",
+                    "Email": "admin@arpansahu.space",
                     "Name": "Great Chat"
                 },
                 "To": [

@@ -1,0 +1,21 @@
+{{ headline|default:"Clock Work Notification" }}
+
+Hello {{ user_email|default:"there" }}!
+
+{{ content }}
+
+{% if action_url %}
+{{ action_text|default:"View Details" }}: {{ action_url }}
+{% endif %}
+
+If you have any questions or need assistance, feel free to reach out to us.
+
+Best regards,
+Clock Work Team
+https://clock-work.arpansahu.space
+
+---
+© {{ current_year }} Clock Work by Arpan Sahu (https://arpansahu.space)
+
+Unsubscribe: {% if unsubscribe_url %}{{ unsubscribe_url }}{% else %}#{% endif %}
+Contact: admin@arpansahu.space

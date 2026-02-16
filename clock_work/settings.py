@@ -32,6 +32,8 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(' ')
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL')
+AWS_S3_CUSTOM_DOMAIN = config('AWS_S3_CUSTOM_DOMAIN')
 BUCKET_TYPE = config('BUCKET_TYPE')
 
 DATABASE_URL = config('DATABASE_URL')
@@ -39,10 +41,15 @@ REDIS_CLOUD_URL = config('REDIS_CLOUD_URL')
 
 MAIL_JET_API_KEY = config('MAIL_JET_API_KEY')
 MAIL_JET_API_SECRET = config('MAIL_JET_API_SECRET')
+MAIL_JET_EMAIL_ADDRESS = config('MAIL_JET_EMAIL_ADDRESS')
+MY_EMAIL_ADDRESS = config('MY_EMAIL_ADDRESS')
 
 DOMAIN = config('DOMAIN')
 PROTOCOL = config('PROTOCOL')
 
+SENTRY_AUTH_TOKEN = config('SENTRY_AUTH_TOKEN', default='')
+SENTRY_ORG = config('SENTRY_ORG', default='')
+SENTRY_PROJECT = config('SENTRY_PROJECT', default='')
 SENTRY_ENVIRONMENT = config('SENTRY_ENVIRONMENT')  # production Or "staging", "development", etc.
 SENTRY_DSH_URL = config('SENTRY_DSH_URL')
 
@@ -215,7 +222,7 @@ if not DEBUG:
 
     elif BUCKET_TYPE == 'MINIO':
         AWS_S3_REGION_NAME = 'us-east-1'  # MinIO doesn't require this, but boto3 does
-        AWS_S3_ENDPOINT_URL = 'https://minioapi.arpansahu.space'  # MinIO API endpoint through nginx proxy
+        # AWS_S3_ENDPOINT_URL loaded from .env (MinIO API endpoint through nginx proxy)
         AWS_S3_SIGNATURE_VERSION = 's3v4'
         AWS_S3_USE_SSL = True
         AWS_S3_VERIFY = True
@@ -230,8 +237,8 @@ if not DEBUG:
             'Access-Control-Allow-Origin': '*',
         }
         
-        # Custom domain for serving files (use API endpoint, not console)
-        AWS_S3_CUSTOM_DOMAIN = f'minioapi.arpansahu.space/{AWS_STORAGE_BUCKET_NAME}'
+        # Custom domain for serving files (loaded from .env: API endpoint/bucket)
+        # AWS_S3_CUSTOM_DOMAIN already loaded from .env above
 
         # s3 static settings
         AWS_STATIC_LOCATION = f'portfolio/{PROJECT_NAME}/static'
@@ -315,27 +322,30 @@ def get_git_commit_hash():
         return None
 
 
-
-sentry_sdk.init(
-    dsn=SENTRY_DSH_URL,
-    integrations=[
-            DjangoIntegration(
-                transaction_style='url',
-                middleware_spans=True,
-                # signals_spans=True,
-                # signals_denylist=[
-                #     django.db.models.signals.pre_init,
-                #     django.db.models.signals.post_init,
-                # ],
-                # cache_spans=False,
-            ),
-        ],
-    traces_sample_rate=1.0,  # Adjust this according to your needs
-    send_default_pii=True,  # To capture personal identifiable information (optional)
-    release=get_git_commit_hash(),  # Set the release to the current git commit hash
+# Sentry Configuration - Only initialize if DSN is provided
+if SENTRY_DSH_URL and SENTRY_DSH_URL.strip():
+    sentry_sdk.init(
+        dsn=SENTRY_DSH_URL,
+        integrations=[
+                DjangoIntegration(
+                    transaction_style='url',
+                    middleware_spans=True,
+                    # signals_spans=True,
+                    # signals_denylist=[
+                    #     django.db.models.signals.pre_init,
+                    #     django.db.models.signals.post_init,
+                    # ],
+                    # cache_spans=False,
+                ),
+            ],
+        traces_sample_rate=1.0,  # Adjust this according to your needs
+        send_default_pii=True,  # To capture personal identifiable information (optional)
+        release=get_git_commit_hash(),  # Set the release to the current git commit hash
     environment=SENTRY_ENVIRONMENT,  # Or "staging", "development", etc.
     # profiles_sample_rate=1.0,
 )
+else:
+    print("⚠️  Sentry DSN not configured - Sentry monitoring disabled")
 
 LOGGING = {
     'version': 1,
@@ -400,4 +410,4 @@ DJANGO_TEST_ENFORCER = {
     'test_output_location': 'app',  # 'app' (default), 'folder', or 'both'
 }
 
-CSRF_TRUSTED_ORIGINS = ['https://clock-work.arpansahu.me', ]
+CSRF_TRUSTED_ORIGINS = ['https://clock-work.arpansahu.space', ]

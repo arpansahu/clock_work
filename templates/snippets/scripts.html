@@ -10,11 +10,14 @@
   <script src="{% static 'assets/js/plugins/fullcalendar.min.js' %}"></script>
   <script src="{% static 'assets/js/plugins/chartjs.min.js' %}"></script>
 
+  <!-- Navbar Fix for null element error -->
+  <script src="{% static 'js/navbar-fix.js' %}"></script>
+
   <script src="{% static 'celery_progress/celery_progress.js' %}"></script>
   <script src="{% static 'celery_progress/websockets.js' %}"></script>
 
-  <!-- Github buttons -->
-  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Github buttons - Local -->
+  <script async defer src="{% static 'js/github-buttons.js' %}"></script>
 
   <!-- Control Center for Soft Dashboard: parallax effects, scripts for the example pages etc -->
   <script src="{% static 'assets/js/soft-ui-dashboard.min.js' %}"></script>

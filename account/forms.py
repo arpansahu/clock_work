@@ -212,7 +212,7 @@ class PasswordResetForm(forms.Form):
             'Messages': [
                 {
                     "From": {
-                        "Email": "admin@arpansahu.me",
+                        "Email": "admin@arpansahu.space",
                         "Name": "Great Chat"
                     },
                     "To": [

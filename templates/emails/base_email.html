@@ -1,0 +1,207 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Clock Work{% endblock %}</title>
+    <style type="text/css">
+        /* Reset styles */
+        body {
+            margin: 0;
+            padding: 0;
+            min-width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f4f4f4;
+        }
+        
+        table {
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+        
+        img {
+            border: 0;
+            outline: none;
+            text-decoration: none;
+            -ms-interpolation-mode: bicubic;
+        }
+        
+        /* Container */
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        
+        /* Header */
+        .email-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .email-header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        
+        .email-header p {
+            margin: 10px 0 0;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+        }
+        
+        /* Body */
+        .email-body {
+            padding: 40px 30px;
+        }
+        
+        .email-body h2 {
+            margin: 0 0 20px;
+            color: #333333;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .email-body p {
+            margin: 0 0 16px;
+            color: #666666;
+            line-height: 1.8;
+        }
+        
+        .email-body a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        /* Button */
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            margin: 20px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        .button:hover {
+            opacity: 0.9;
+        }
+        
+        /* Content box */
+        .content-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        /* Footer */
+        .email-footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .email-footer p {
+            margin: 8px 0;
+            color: #999999;
+            font-size: 14px;
+        }
+        
+        .email-footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .social-links {
+            margin: 20px 0;
+        }
+        
+        .social-links a {
+            display: inline-block;
+            margin: 0 8px;
+            color: #667eea;
+            font-size: 14px;
+        }
+        
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+            }
+            
+            .email-header {
+                padding: 30px 20px !important;
+            }
+            
+            .email-body {
+                padding: 30px 20px !important;
+            }
+            
+            .email-footer {
+                padding: 20px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" class="email-container" cellpadding="0" cellspacing="0" border="0">
+                    <!-- Header -->
+                    <tr>
+                        <td class="email-header">
+                            <h1>{% block header_title %}Clock Work{% endblock %}</h1>
+                            <p>{% block header_subtitle %}Reminders & Notes Management{% endblock %}</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Body -->
+                    <tr>
+                        <td class="email-body">
+                            {% block content %}
+                            {% endblock %}
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td class="email-footer">
+                            <div class="social-links">
+                                <a href="https://github.com/arpansahu">GitHub</a> •
+                                <a href="https://linkedin.com/in/arpansahu">LinkedIn</a> •
+                                <a href="https://arpansahu.space">Portfolio</a>
+                            </div>
+                            <p>
+                                © {{ current_year }} Clock Work by <a href="https://arpansahu.space">Arpan Sahu</a>
+                            </p>
+                            <p>
+                                <a href="{% block unsubscribe_url %}#{% endblock %}">Unsubscribe</a> •
+                                <a href="https://clock-work.arpansahu.space">Visit Website</a>
+                            </p>
+                            <p style="font-size: 12px; color: #aaaaaa; margin-top: 16px;">
+                                This email was sent from Clock Work. If you have any questions,
+                                please contact us at <a href="mailto:admin@arpansahu.space">admin@arpansahu.space</a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

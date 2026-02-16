@@ -5,16 +5,53 @@ pipeline {
         booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run tests before building')
     }
     environment {
-        REGISTRY = "harbor.arpansahu.space"
-        REPOSITORY = "library/clock_work"
-        IMAGE_TAG = "${env.BUILD_ID}"
         COMMIT_FILE = "${env.WORKSPACE}/last_commit.txt"
-        ENV_PROJECT_NAME = "clock_work"
     }
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+        stage('Setup Environment') {
+            steps {
+                script {
+                    echo "Loading environment variables from Jenkins credentials..."
+                    withCredentials([file(credentialsId: 'clock_work_env_file', variable: 'ENV_FILE')]) {
+                        // Use Jenkins API instead of shell commands to avoid permission issues
+                        def envContent = readFile(file: env.ENV_FILE)
+                        writeFile(file: '.env', text: envContent)
+                        echo '.env file created successfully from credentials'
+                        
+                        // Parse and load environment variables from .env
+                        def envVars = sh(script: 'cat .env | grep -v "^#" | grep -v "^$" | xargs', returnStdout: true).trim()
+                        if (envVars) {
+                            envVars.split().each { envVar ->
+                                if (envVar.contains('=')) {
+                                    def parts = envVar.split('=', 2)
+                                    def key = parts[0]
+                                    def value = parts.length > 1 ? parts[1] : ''  // Null-safe check
+                                    if (key) {
+                                        env."${key}" = value
+                                    }
+                                }
+                            }
+                        }
+                        
+                        echo '✅ Environment variables loaded from .env'
+                        
+                        // Compute derived variables
+                        env.BUILD_PROJECT_NAME = "${env.ENV_PROJECT_NAME}_build"
+                        env.PROJECT_NAME_WITH_DASH = env.ENV_PROJECT_NAME.replace('_', '-')
+                        env.REGISTRY = "${env.DOCKER_REGISTRY}/${env.DOCKER_REPOSITORY}"
+                        env.REPOSITORY = "${env.DOCKER_REGISTRY}/${env.DOCKER_REPOSITORY}/${env.DOCKER_IMAGE_NAME}"
+                        env.IMAGE_TAG = "${env.BUILD_ID}"
+                        
+                        echo "Computed BUILD_PROJECT_NAME: ${env.BUILD_PROJECT_NAME}"
+                        echo "Computed PROJECT_NAME_WITH_DASH: ${env.PROJECT_NAME_WITH_DASH}"
+                        echo "Docker Image: ${env.REPOSITORY}:${env.IMAGE_TAG}"
+                    }
+                }
             }
         }
         stage('Check for Changes') {
@@ -75,14 +112,12 @@ pipeline {
             }
             steps {
                 script {
-                    echo "Running tests..."
-                    // Copy .env file to the workspace
-                    sh "sudo cp /root/projectenvs/${ENV_PROJECT_NAME}/.env ${env.WORKSPACE}/"
-                    
-                    // Run Django tests
+                    echo 'Running Django Unit Tests...'
+                    // .env file already created in Setup Environment stage
                     sh """
-                    python manage.py test --verbosity=2 --failfast
-                    """    
+                        python manage.py test --verbosity=2 --failfast
+                    """
+                    echo '✅ All tests passed successfully!'
                 }
             }
         }
@@ -92,8 +127,8 @@ pipeline {
             }
             steps {
                 script {
-                    // Copy .env file to the workspace
-                    sh "sudo cp /root/projectenvs/${ENV_PROJECT_NAME}/.env ${env.WORKSPACE}/"
+                    // .env file already created in Setup Environment stage
+                    echo "✅ Dependencies and environment ready"
                 }
             }
         }

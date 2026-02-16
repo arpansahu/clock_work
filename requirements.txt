@@ -81,4 +81,5 @@ wrapt==1.14.1
 zope.interface==5.4.0
 beautifulsoup4==4.14.3
 rich==14.3.2
-django-test-enforcer==0.3.0
+django-test-enforcer==0.1.0
+toml==0.10.2
