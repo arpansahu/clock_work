@@ -53,7 +53,7 @@ pipeline {
                         env.PROJECT_NAME_WITH_DASH = env.ENV_PROJECT_NAME.replace('_', '-')
                         env.NGINX_CONF = "/etc/nginx/sites-available/${env.PROJECT_NAME_WITH_DASH}"
                         env.NGINX_CONF_FLOWER = "/etc/nginx/sites-available/flower-${env.PROJECT_NAME_WITH_DASH}"
-                        env.REGISTRY = "${env.DOCKER_REGISTRY}/${env.DOCKER_REPOSITORY}"
+                        env.REGISTRY = "${env.DOCKER_REGISTRY}"
                         env.REPOSITORY = "${env.DOCKER_REGISTRY}/${env.DOCKER_REPOSITORY}/${env.DOCKER_IMAGE_NAME}"
                         
                         echo "Project: ${env.ENV_PROJECT_NAME}"
@@ -62,7 +62,7 @@ pipeline {
                         echo "Computed NGINX_CONF: ${env.NGINX_CONF}"
                         echo "Computed NGINX_CONF_FLOWER: ${env.NGINX_CONF_FLOWER}"
                         echo "Registry: ${env.REGISTRY}"
-                        echo "Repository: ${env.REPOSITORY}"
+                        echo "Full Repository: ${env.REPOSITORY}"
                     }
                 }
             }
@@ -196,8 +196,8 @@ pipeline {
                         echo "Retrieved image tag (build number): ${imageTag}"
 
 
-                        // Check if REGISTRY, REPOSITORY, and imageTag are all defined and not empty
-                        if (REGISTRY && REPOSITORY && imageTag) {
+                        // Check if REPOSITORY and imageTag are all defined and not empty
+                        if (REPOSITORY && imageTag) {
                             if (params.DEPLOY_TYPE == 'kubernetes') {
                                 // Replace the placeholder in the deployment YAML
                                 sh "sed -i 's|:latest|:${imageTag}|g' ${WORKSPACE}/deployment.yaml"
@@ -206,11 +206,11 @@ pipeline {
                             if (params.DEPLOY_TYPE == 'docker') {
                                 // Ensure the correct image tag is used in the docker-compose.yml
                                 sh """
-                                sed -i 's|image: .*|image: ${REGISTRY}/${REPOSITORY}:${imageTag}|' docker-compose.yml
+                                sed -i 's|image: .*clock_work.*|image: ${REPOSITORY}:${imageTag}|' docker-compose.yml
                                 """
                             }
                         } else {
-                            echo "One or more required variables (REGISTRY, REPOSITORY, imageTag) are not defined or empty. Skipping docker-compose.yml update."
+                            echo "One or more required variables (REPOSITORY, imageTag) are not defined or empty. Skipping update."
                         }
                     }
                 }

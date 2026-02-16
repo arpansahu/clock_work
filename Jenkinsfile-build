@@ -43,13 +43,14 @@ pipeline {
                         // Compute derived variables
                         env.BUILD_PROJECT_NAME = "${env.ENV_PROJECT_NAME}_build"
                         env.PROJECT_NAME_WITH_DASH = env.ENV_PROJECT_NAME.replace('_', '-')
-                        env.REGISTRY = "${env.DOCKER_REGISTRY}/${env.DOCKER_REPOSITORY}"
+                        env.REGISTRY = "${env.DOCKER_REGISTRY}"
                         env.REPOSITORY = "${env.DOCKER_REGISTRY}/${env.DOCKER_REPOSITORY}/${env.DOCKER_IMAGE_NAME}"
                         env.IMAGE_TAG = "${env.BUILD_ID}"
                         
                         echo "Computed BUILD_PROJECT_NAME: ${env.BUILD_PROJECT_NAME}"
                         echo "Computed PROJECT_NAME_WITH_DASH: ${env.PROJECT_NAME_WITH_DASH}"
-                        echo "Docker Image: ${env.REPOSITORY}:${env.IMAGE_TAG}"
+                        echo "Registry: ${env.REGISTRY}"
+                        echo "Full Image: ${env.REPOSITORY}:${env.IMAGE_TAG}"
                     }
                 }
             }
@@ -57,9 +58,12 @@ pipeline {
         stage('Check for Changes') {
             steps {
                 script {
+                    // Initialize BUILD_STATUS
+                    env.BUILD_STATUS = 'NOT_BUILT'
+                    
                     if (params.skip_checks) {
                         echo "Skipping Checks is True. Proceeding with build."
-                        BUILD_STATUS = 'BUILT'
+                        env.BUILD_STATUS = 'BUILT'
                         currentBuild.description = "${currentBuild.fullDisplayName} Skipping Checks is True. Proceeding with build."
                     } else {
                         // Get the current commit hash
@@ -89,12 +93,12 @@ pipeline {
                                     return
                                 } else {
                                     echo "Relevant changes detected. Proceeding with build."
-                                    BUILD_STATUS = 'BUILT'
+                                    env.BUILD_STATUS = 'BUILT'
                                 }
                             }
                         } else {
                             echo "No last commit file found. Proceeding with initial build."
-                            BUILD_STATUS = 'BUILT'
+                            env.BUILD_STATUS = 'BUILT'
                         }
 
                         // Save the current commit hash to the file
@@ -106,7 +110,7 @@ pipeline {
         stage('Run Tests') {
             when {
                 allOf {
-                    expression { return BUILD_STATUS != 'NOT_BUILT' }
+                    expression { return env.BUILD_STATUS == 'BUILT' }
                     expression { return params.RUN_TESTS }
                 }
             }
@@ -115,20 +119,20 @@ pipeline {
                     echo 'Running Django Unit Tests in Docker...'
                     // Build test image with dependencies
                     sh """
-                        docker build -t ${REGISTRY}/${REPOSITORY}:test-${BUILD_ID} .
+                        docker build -t ${REPOSITORY}:test-${BUILD_ID} .
                     """
                     
                     // Run tests inside Docker container
                     sh """
                         docker run --rm \
                             --env-file .env \
-                            ${REGISTRY}/${REPOSITORY}:test-${BUILD_ID} \
+                            ${REPOSITORY}:test-${BUILD_ID} \
                             python manage.py test --verbosity=2 --failfast
                     """
                     
                     // Clean up test image
                     sh """
-                        docker rmi ${REGISTRY}/${REPOSITORY}:test-${BUILD_ID} || true
+                        docker rmi ${REPOSITORY}:test-${BUILD_ID} || true
                     """
                     
                     echo '✅ All tests passed successfully!'
@@ -137,7 +141,7 @@ pipeline {
         }
         stage('Dependencies') {
             when {
-                expression { return BUILD_STATUS != 'NOT_BUILT' }
+                expression { return env.BUILD_STATUS == 'BUILT' }
             }
             steps {
                 script {
@@ -148,7 +152,7 @@ pipeline {
         }
         stage('Build Image') {
             when {
-                expression { return BUILD_STATUS != 'NOT_BUILT' }
+                expression { return env.BUILD_STATUS == 'BUILT' }
             }
             steps {
                 script {
@@ -156,19 +160,19 @@ pipeline {
                     sh 'docker --version'
 
                     // Log the image details
-                    echo "Building Docker image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG}"
+                    echo "Building Docker image: ${REPOSITORY}:${IMAGE_TAG}"
 
                     // Build the Docker image
                     sh """
-                    docker build -t ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG} .
-                    docker tag ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG} ${REGISTRY}/${REPOSITORY}:latest
+                    docker build -t ${REPOSITORY}:${IMAGE_TAG} .
+                    docker tag ${REPOSITORY}:${IMAGE_TAG} ${REPOSITORY}:latest
                     """
                 }
             }
         }
         stage('Push Image') {
             when {
-                expression { return BUILD_STATUS != 'NOT_BUILT' }
+                expression { return env.BUILD_STATUS == 'BUILT' }
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'harbor-credentials', passwordVariable: 'DOCKER_REGISTRY_PASSWORD', usernameVariable: 'DOCKER_REGISTRY_USERNAME')]) {
@@ -180,8 +184,8 @@ pipeline {
 
                         // Push the Docker image to the registry
                         sh '''
-                        docker push ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG}
-                        docker push ${REGISTRY}/${REPOSITORY}:latest
+                        docker push ${REPOSITORY}:${IMAGE_TAG}
+                        docker push ${REPOSITORY}:latest
                         '''
                     }
                 }
@@ -192,7 +196,7 @@ pipeline {
         success {
             script {
                 if (!currentBuild.description) {
-                    currentBuild.description = "Image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG} built and pushed successfully"
+                    currentBuild.description = "Image: ${REPOSITORY}:${IMAGE_TAG} built and pushed successfully"
                 }
                 
                 // Send success notification email
