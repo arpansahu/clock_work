@@ -69,9 +69,13 @@ socialauth
 
 env
 venv
+venv_old
 new_env
 supervisord.pid
 supervisord.log
+
+# Temporary upgrade files
+requirements_upgraded.txt
 
 # Documentation files (auto-generated, not for git)
 CDN_TO_LOCAL_MIGRATION.md
