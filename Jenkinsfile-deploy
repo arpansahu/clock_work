@@ -374,10 +374,11 @@ pipeline {
                                 while [ \$ATTEMPT -lt \$MAX_RETRIES ]; do
                                     ATTEMPT=\$((ATTEMPT + 1))
                                     echo "Health check attempt \$ATTEMPT/\$MAX_RETRIES..."
-                                    HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" -L http://${clusterIP}:${nodePort} || echo "000")
+                                    HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" -L http://${clusterIP}:${nodePort})
                                     echo "HTTP Status: \$HTTP_STATUS"
                                     
-                                    if [ "\$HTTP_STATUS" = "200" ] || [ "\$HTTP_STATUS" = "302" ]; then
+                                    # Accept 200 (OK), 301 (Redirect to HTTPS), or 302 (Redirect) as success
+                                    if [ "\$HTTP_STATUS" = "200" ] || [ "\$HTTP_STATUS" = "301" ] || [ "\$HTTP_STATUS" = "302" ]; then
                                         echo "✅ Service is responding! HTTP Status: \$HTTP_STATUS"
                                         break
                                     fi
@@ -389,7 +390,7 @@ pipeline {
                                 done
                                 
                                 set -e  # Re-enable exit on error
-                                if [ "\$HTTP_STATUS" = "200" ] || [ "\$HTTP_STATUS" = "302" ]; then
+                                if [ "\$HTTP_STATUS" = "200" ] || [ "\$HTTP_STATUS" = "301" ] || [ "\$HTTP_STATUS" = "302" ]; then
                                     echo "Service is reachable at http://${clusterIP}:${nodePort}"
 
                                     echo "Updating Nginx configuration at ${NGINX_CONF}..."
