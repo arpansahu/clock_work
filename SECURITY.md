@@ -7,9 +7,26 @@ We provide security patches for the latest release of our project. Users are enc
 
 | Version       | Supported          |
 | ------------- | ------------------ |
-| Latest        | 1.0.0 |
-| Previous      |  |
-| Older versions |                |
+| 3.0.0 (Latest)| ✅ Django 4.2.28 LTS |
+| 2.0.0         | ✅ Security updates only |
+| 1.0.0         | ❌ No longer supported |
+| Older versions| ❌ Not supported    |
+
+### Current Production Stack (v3.0.0)
+
+- **Django**: 4.2.28 LTS (Long Term Support until April 2026)
+- **Python**: 3.10.7
+- **Security Features**:
+  - HSTS enabled (1 year max-age)
+  - Secure SSL redirect (SECURE_SSL_REDIRECT=True)
+  - Secure cookies (SESSION_COOKIE_SECURE, CSRF_COOKIE_SECURE)
+  - X-Frame-Options: DENY
+  - Referrer-Policy: strict-origin-when-cross-origin
+  - Custom ALLOWED_HOSTS with CIDR support
+  - Django Channels with secure WebSocket support
+  - TLS-enabled Redis connection (rediss://)
+  - SCRAM-SHA-256 PostgreSQL authentication
+  - Sentry error monitoring and tracking
 
 ## Reporting a Vulnerability
 
