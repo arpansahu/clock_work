@@ -1,9 +1,10 @@
 # check_service_health/management/commands/test_storage.py
 
 from django.core.management.base import BaseCommand
-from django.core.files.storage import default_storage, storages
+from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
+from django.utils.module_loading import import_string
 import uuid
 
 
@@ -17,34 +18,34 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING('USE_S3 is False - using local storage'))
                 return
             
-            self.stdout.write(f'Storage Backend: {settings.STORAGES["default"]["BACKEND"]}')
+            # Django 3.2 compatibility - access settings differently
+            default_storage_backend = getattr(settings, 'DEFAULT_FILE_STORAGE', 'django.core.files.storage.FileSystemStorage')
+            self.stdout.write(f'Storage Backend: {default_storage_backend}')
             self.stdout.write(f'Bucket Type: {settings.BUCKET_TYPE}')
             self.stdout.write(f'Bucket Name: {settings.AWS_STORAGE_BUCKET_NAME}')
             self.stdout.write(f'Endpoint URL: {settings.AWS_S3_ENDPOINT_URL}')
             
             # Test default storage (public media)
             self.stdout.write('\n--- Testing Default Storage (Public Media) ---')
-            self._test_storage('default', 'Default Storage')
+            self._test_storage(default_storage, 'Default Storage')
             
-            # Test private storage
-            self.stdout.write('\n--- Testing Private Storage ---')
-            self._test_storage('private', 'Private Storage')
-            
-            # Test static files storage
-            self.stdout.write('\n--- Testing Static Files Storage ---')
-            self._test_storage('staticfiles', 'Static Files Storage')
+            # Test private storage (if configured)
+            try:
+                private_storage_class = import_string(f'{settings.PROJECT_NAME}.storage_backends.PrivateMediaStorage')
+                private_storage = private_storage_class()
+                self.stdout.write('\n--- Testing Private Storage ---')
+                self._test_storage(private_storage, 'Private Storage')
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f'Private storage not available: {e}'))
             
             self.stdout.write(self.style.SUCCESS('\nStorage test completed successfully'))
             
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Error occurred: {e}'))
     
-    def _test_storage(self, storage_name, display_name):
+    def _test_storage(self, storage, display_name):
         """Test a specific storage backend"""
         try:
-            # Get storage instance
-            storage = storages[storage_name]
-            
             # Generate unique filename
             test_filename = f'health-check-{uuid.uuid4()}.txt'
             test_content = f'Health check test file - {uuid.uuid4()}'
