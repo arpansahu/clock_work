@@ -217,8 +217,8 @@ pipeline {
                     ]
                 }'"""
 
-                // Trigger clock_work job only if the build is stable
-                build job: 'clock_work', parameters: [booleanParam(name: 'DEPLOY', value: true)], wait: false
+                // Trigger deployment job only if the build is stable
+                build job: 'clock_work_deploy', parameters: [booleanParam(name: 'DEPLOY', value: true)], wait: false
             }
         }
         failure {
