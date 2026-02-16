@@ -45,8 +45,13 @@ MAIL_JET_API_SECRET = config('MAIL_JET_API_SECRET')
 MAIL_JET_EMAIL_ADDRESS = config('MAIL_JET_EMAIL_ADDRESS')
 MY_EMAIL_ADDRESS = config('MY_EMAIL_ADDRESS')
 
-DOMAIN = config('DOMAIN')
-PROTOCOL = config('PROTOCOL')
+# Domain and Protocol Configuration
+if DEBUG:
+    DOMAIN = 'localhost:8000'
+    PROTOCOL = 'http'
+else:
+    DOMAIN = config('DOMAIN')
+    PROTOCOL = config('PROTOCOL')
 
 SENTRY_AUTH_TOKEN = config('SENTRY_AUTH_TOKEN', default='')
 SENTRY_ORG = config('SENTRY_ORG', default='')
@@ -168,7 +173,20 @@ USE_L10N = True
 
 USE_TZ = True
 
+# Security Settings for Production
+if not DEBUG:
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_PRELOAD = True
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
+# REFERRER POLICY
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# Storage Configuration
 if not DEBUG:
     if BUCKET_TYPE == 'AWS':
         AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
@@ -411,4 +429,6 @@ DJANGO_TEST_ENFORCER = {
     'test_output_location': 'app',  # 'app' (default), 'folder', or 'both'
 }
 
-CSRF_TRUSTED_ORIGINS = ['https://clock-work.arpansahu.space', ]
+# CSRF Trusted Origins - dynamically constructed from environment variables
+# Supports both the main domain and all subdomains (wildcard)
+CSRF_TRUSTED_ORIGINS = [f'{PROTOCOL}://{DOMAIN}', f'{PROTOCOL}://*.{DOMAIN}']
