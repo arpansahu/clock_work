@@ -112,11 +112,25 @@ pipeline {
             }
             steps {
                 script {
-                    echo 'Running Django Unit Tests...'
-                    // .env file already created in Setup Environment stage
+                    echo 'Running Django Unit Tests in Docker...'
+                    // Build test image with dependencies
                     sh """
-                        python manage.py test --verbosity=2 --failfast
+                        docker build -t ${REGISTRY}/${REPOSITORY}:test-${BUILD_ID} .
                     """
+                    
+                    // Run tests inside Docker container
+                    sh """
+                        docker run --rm \
+                            --env-file .env \
+                            ${REGISTRY}/${REPOSITORY}:test-${BUILD_ID} \
+                            python manage.py test --verbosity=2 --failfast
+                    """
+                    
+                    // Clean up test image
+                    sh """
+                        docker rmi ${REGISTRY}/${REPOSITORY}:test-${BUILD_ID} || true
+                    """
+                    
                     echo '✅ All tests passed successfully!'
                 }
             }
