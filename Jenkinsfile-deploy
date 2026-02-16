@@ -182,19 +182,49 @@ pipeline {
                     echo "Hitting API URL: ${api_url}"
                     
                     withCredentials([usernamePassword(credentialsId: 'jenkins-admin-credentials', usernameVariable: 'JENKINS_USER', passwordVariable: 'JENKINS_TOKEN')]) {
-                        // Execute the curl command to retrieve the JSON response
-                        // echo "usernameVariable: ${JENKINS_USER}, passwordVariable: ${JENKINS_TOKEN}"
-                        def buildInfoJson = sh(script: "curl -u ${JENKINS_USER}:${JENKINS_TOKEN} ${api_url}", returnStdout: true).trim()
-
-                        // Log the raw JSON response for debugging
+                        // Fetch build info from API
+                        def buildInfoJson = sh(script: "curl -s -u ${JENKINS_USER}:${JENKINS_TOKEN} ${api_url}", returnStdout: true).trim()
+                        
+                        // Log for debugging
                         echo "Raw JSON response: ${buildInfoJson}"
 
-                        // Extract build number using safer file-based approach to avoid shell escaping issues
+                        // Extract image tag from description (format: "Image: ...clock_work:XX built...")
                         def imageTag = sh(script: """
-                            curl -s -u ${JENKINS_USER}:${JENKINS_TOKEN} ${api_url} | grep -oP '"number":\\s*\\K\\d+' | head -n 1
+                            curl -s -u ${JENKINS_USER}:${JENKINS_TOKEN} ${api_url} | grep -oP 'clock_work:\\K\\d+' | head -n 1 || echo ''
                         """, returnStdout: true).trim()
 
-                        echo "Retrieved image tag (build number): ${imageTag}"
+                        echo "Image tag from current build: '${imageTag}'"
+                        
+                        // If no image tag found (skipped build), check previous build
+                        if (!imageTag || imageTag.isEmpty()) {
+                            echo "⚠️  No image in current build (likely skipped). Checking previous build..."
+                            
+                            // Extract previous build number from JSON
+                            def prevBuildNum = sh(script: """
+                                curl -s -u ${JENKINS_USER}:${JENKINS_TOKEN} ${api_url} | grep -oP '"previousBuild"[^}]*"number":\\s*\\K\\d+' | head -n 1 || echo ''
+                            """, returnStdout: true).trim()
+                            
+                            if (prevBuildNum) {
+                                echo "Fetching image from build #${prevBuildNum}..."
+                                def prevApi = "https://${env.JENKINS_DOMAIN}/job/${env.BUILD_PROJECT_NAME}/${prevBuildNum}/api/json"
+                                
+                                imageTag = sh(script: """
+                                    curl -s -u ${JENKINS_USER}:${JENKINS_TOKEN} ${prevApi} | grep -oP 'clock_work:\\K\\d+' | head -n 1 || echo ''
+                                """, returnStdout: true).trim()
+                                
+                                if (imageTag) {
+                                    echo "✅ Found image tag from previous build: ${imageTag}"
+                                } else {
+                                    echo "⚠️  Previous build also has no image, using 'latest'"
+                                    imageTag = "latest"
+                                }
+                            } else {
+                                echo "⚠️  No previous build found, using 'latest'"
+                                imageTag = "latest"
+                            }
+                        } else {
+                            echo "✅ Using image tag: ${imageTag}"
+                        }
 
 
                         // Check if REPOSITORY and imageTag are all defined and not empty
