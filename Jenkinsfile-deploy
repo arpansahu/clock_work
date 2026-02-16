@@ -53,16 +53,15 @@ pipeline {
                         env.PROJECT_NAME_WITH_DASH = env.ENV_PROJECT_NAME.replace('_', '-')
                         env.NGINX_CONF = "/etc/nginx/sites-available/${env.PROJECT_NAME_WITH_DASH}"
                         env.NGINX_CONF_FLOWER = "/etc/nginx/sites-available/flower-${env.PROJECT_NAME_WITH_DASH}"
-                        env.REGISTRY = "${env.DOCKER_REGISTRY}"
-                        env.REPOSITORY = "${env.DOCKER_REGISTRY}/${env.DOCKER_REPOSITORY}/${env.DOCKER_IMAGE_NAME}"
+                        env.REGISTRY = env.DOCKER_REGISTRY
+                        env.REPOSITORY = "${env.DOCKER_REPOSITORY}/${env.DOCKER_IMAGE_NAME}"
                         
                         echo "Project: ${env.ENV_PROJECT_NAME}"
                         echo "Computed BUILD_PROJECT_NAME: ${env.BUILD_PROJECT_NAME}"
                         echo "Computed PROJECT_NAME_WITH_DASH: ${env.PROJECT_NAME_WITH_DASH}"
                         echo "Computed NGINX_CONF: ${env.NGINX_CONF}"
                         echo "Computed NGINX_CONF_FLOWER: ${env.NGINX_CONF_FLOWER}"
-                        echo "Registry: ${env.REGISTRY}"
-                        echo "Full Repository: ${env.REPOSITORY}"
+                        echo "Docker Image: ${env.REGISTRY}/${env.REPOSITORY}:${IMAGE_TAG}"
                     }
                 }
             }
@@ -206,7 +205,7 @@ pipeline {
                             if (params.DEPLOY_TYPE == 'docker') {
                                 // Ensure the correct image tag is used in the docker-compose.yml
                                 sh """
-                                sed -i 's|image: .*clock_work.*|image: ${REPOSITORY}:${imageTag}|' docker-compose.yml
+                                sed -i 's|image: .*clock_work.*|image: ${REGISTRY}/${REPOSITORY}:${imageTag}|' docker-compose.yml
                                 """
                             }
                         } else {

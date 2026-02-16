@@ -43,14 +43,13 @@ pipeline {
                         // Compute derived variables
                         env.BUILD_PROJECT_NAME = "${env.ENV_PROJECT_NAME}_build"
                         env.PROJECT_NAME_WITH_DASH = env.ENV_PROJECT_NAME.replace('_', '-')
-                        env.REGISTRY = "${env.DOCKER_REGISTRY}"
-                        env.REPOSITORY = "${env.DOCKER_REGISTRY}/${env.DOCKER_REPOSITORY}/${env.DOCKER_IMAGE_NAME}"
+                        env.REGISTRY = env.DOCKER_REGISTRY
+                        env.REPOSITORY = "${env.DOCKER_REPOSITORY}/${env.DOCKER_IMAGE_NAME}"
                         env.IMAGE_TAG = "${env.BUILD_ID}"
                         
                         echo "Computed BUILD_PROJECT_NAME: ${env.BUILD_PROJECT_NAME}"
                         echo "Computed PROJECT_NAME_WITH_DASH: ${env.PROJECT_NAME_WITH_DASH}"
-                        echo "Registry: ${env.REGISTRY}"
-                        echo "Full Image: ${env.REPOSITORY}:${env.IMAGE_TAG}"
+                        echo "Docker Image: ${env.REGISTRY}/${env.REPOSITORY}:${env.IMAGE_TAG}"
                     }
                 }
             }
@@ -116,23 +115,16 @@ pipeline {
             }
             steps {
                 script {
-                    echo 'Running Django Unit Tests in Docker...'
-                    // Build test image with dependencies
-                    sh """
-                        docker build -t ${REPOSITORY}:test-${BUILD_ID} .
-                    """
+                    echo 'Running Django Unit Tests...'
                     
-                    // Run tests inside Docker container
                     sh """
-                        docker run --rm \
-                            --env-file .env \
-                            ${REPOSITORY}:test-${BUILD_ID} \
-                            python manage.py test --verbosity=2 --failfast --noinput
-                    """
-                    
-                    // Clean up test image
-                    sh """
-                        docker rmi ${REPOSITORY}:test-${BUILD_ID} || true
+                    docker run --rm \
+                        -v \$(pwd):/app \
+                        -w /app \
+                        --env-file .env \
+                        python:3.10.7 \
+                        bash -c 'pip install -q -r requirements.txt && \
+                                 python manage.py test --settings=clock_work.test_settings --verbosity=2 --failfast'
                     """
                     
                     echo '✅ All tests passed successfully!'
@@ -160,12 +152,12 @@ pipeline {
                     sh 'docker --version'
 
                     // Log the image details
-                    echo "Building Docker image: ${REPOSITORY}:${IMAGE_TAG}"
+                    echo "Building Docker image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG}"
 
                     // Build the Docker image
                     sh """
-                    docker build -t ${REPOSITORY}:${IMAGE_TAG} .
-                    docker tag ${REPOSITORY}:${IMAGE_TAG} ${REPOSITORY}:latest
+                    docker build -t ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG} .
+                    docker tag ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG} ${REGISTRY}/${REPOSITORY}:latest
                     """
                 }
             }
@@ -184,8 +176,8 @@ pipeline {
 
                         // Push the Docker image to the registry
                         sh '''
-                        docker push ${REPOSITORY}:${IMAGE_TAG}
-                        docker push ${REPOSITORY}:latest
+                        docker push ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG}
+                        docker push ${REGISTRY}/${REPOSITORY}:latest
                         '''
                     }
                 }
@@ -196,7 +188,7 @@ pipeline {
         success {
             script {
                 if (!currentBuild.description) {
-                    currentBuild.description = "Image: ${REPOSITORY}:${IMAGE_TAG} built and pushed successfully"
+                    currentBuild.description = "Image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG} built and pushed successfully"
                 }
                 
                 // Send success notification email
