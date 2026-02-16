@@ -27,4 +27,20 @@ spec:
               name: daphne
             - containerPort: 8051
               name: celery-flower
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8012
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8012
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
   revisionHistoryLimit: 0

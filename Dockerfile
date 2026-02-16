@@ -21,4 +21,8 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 EXPOSE 8012 8051
 
 # Start supervisord to manage the processes
-CMD python manage.py migrate --noinput && echo "Running collectstatic..." && python manage.py collectstatic --noinput --verbosity 2 && supervisord -c /etc/supervisor/conf.d/supervisord.conf
+# Use sh -c with set -e to fail fast on any error, exec supervisord to replace shell process
+CMD sh -c "set -e && \
+    python manage.py migrate --noinput && \
+    python manage.py collectstatic --noinput --verbosity 2 && \
+    exec supervisord -c /etc/supervisor/conf.d/supervisord.conf"
