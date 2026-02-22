@@ -7,7 +7,6 @@ pipeline {
             description: 'Run tests before building. Set to false for faster builds.'
         )
     }
-    environment {}
     stages {
         stage('Checkout') {
             steps {
