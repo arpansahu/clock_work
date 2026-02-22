@@ -1,12 +1,13 @@
 pipeline {
     agent any
     parameters {
-        booleanParam(name: 'skip_checks', defaultValue: false, description: 'Skip the Check for Changes stage')
-        booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run tests before building')
+        booleanParam(
+            name: 'RUN_TESTS',
+            defaultValue: true,
+            description: 'Run tests before building. Set to false for faster builds.'
+        )
     }
-    environment {
-        COMMIT_FILE = "${env.WORKSPACE}/last_commit.txt"
-    }
+    environment {}
     stages {
         stage('Checkout') {
             steps {
@@ -57,64 +58,9 @@ pipeline {
                 }
             }
         }
-        stage('Check for Changes') {
-            steps {
-                script {
-                    // Initialize BUILD_STATUS
-                    env.BUILD_STATUS = 'NOT_BUILT'
-                    
-                    if (params.skip_checks) {
-                        echo "Skipping Checks is True. Proceeding with build."
-                        env.BUILD_STATUS = 'BUILT'
-                        currentBuild.description = "${currentBuild.fullDisplayName} Skipping Checks is True. Proceeding with build."
-                    } else {
-                        // Get the current commit hash
-                        def currentCommit = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
-                        echo "Current commit: ${currentCommit}"
-
-                        // Check if the last commit file exists
-                        if (fileExists(COMMIT_FILE)) {
-                            def lastCommit = readFile(COMMIT_FILE).trim()
-                            echo "Last commit: ${lastCommit}"
-
-                            // Compare the current commit with the last commit
-                            if (currentCommit == lastCommit) {
-                                echo "No changes detected. Skipping build."
-                                currentBuild.description = "${currentBuild.fullDisplayName} build skipped due to no changes detected"
-                                return
-                            } else {
-                                // Check for changes in relevant files
-                                def changes = sh(script: "git diff --name-only ${lastCommit} ${currentCommit}", returnStdout: true).trim().split("\n")
-                                def relevantChanges = changes.findAll { 
-                                    !(it in ['README.md', 'SECURITY.md', 'CHANGELOG.md', '.github/dependabot.yml'])
-                                }
-                                
-                                if (relevantChanges.isEmpty()) {
-                                    echo "No relevant changes detected. Skipping build."
-                                    currentBuild.description = "${currentBuild.fullDisplayName} build skipped due to no relevant changes"
-                                    return
-                                } else {
-                                    echo "Relevant changes detected. Proceeding with build."
-                                    env.BUILD_STATUS = 'BUILT'
-                                }
-                            }
-                        } else {
-                            echo "No last commit file found. Proceeding with initial build."
-                            env.BUILD_STATUS = 'BUILT'
-                        }
-
-                        // Save the current commit hash to the file
-                        writeFile(file: COMMIT_FILE, text: currentCommit)
-                    }
-                }
-            }
-        }
         stage('Run Tests') {
             when {
-                allOf {
-                    expression { return env.BUILD_STATUS == 'BUILT' }
-                    expression { return params.RUN_TESTS }
-                }
+                expression { return params.RUN_TESTS }
             }
             steps {
                 script {
@@ -135,9 +81,6 @@ pipeline {
             }
         }
         stage('Dependencies') {
-            when {
-                expression { return env.BUILD_STATUS == 'BUILT' }
-            }
             steps {
                 script {
                     // .env file already created in Setup Environment stage
@@ -146,9 +89,6 @@ pipeline {
             }
         }
         stage('Build Image') {
-            when {
-                expression { return env.BUILD_STATUS == 'BUILT' }
-            }
             steps {
                 script {
                     // Ensure Docker is running and can be accessed
@@ -166,9 +106,6 @@ pipeline {
             }
         }
         stage('Push Image') {
-            when {
-                expression { return env.BUILD_STATUS == 'BUILT' }
-            }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'harbor-credentials', passwordVariable: 'DOCKER_REGISTRY_PASSWORD', usernameVariable: 'DOCKER_REGISTRY_USERNAME')]) {
                     script {
